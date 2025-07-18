@@ -1,43 +1,77 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Redirect, Tabs } from "expo-router";
+import { COLORS } from "../../constants/theme";
+import { View, Text } from "react-native";
+import { useAuth } from "@clerk/clerk-expo";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+  const { isSignedIn } = useAuth();
+  if (!isSignedIn)
+    return <Redirect href={"/onBordingScreens/welcome"} />;
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarShowLabel: false,
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
+        tabBarStyle: {
+          backgroundColor: COLORS.pureWhite,
+          borderTopColor: COLORS.pureWhite,
+          elevation: 1,
+          height: 70,
+        },
+        tabBarPosition: 'bottom',
+        tabBarActiveTintColor: COLORS.pureWhite,
+        tabBarInactiveTintColor: COLORS.lightGray,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ size, color, focused }) => {
+            return (
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <MaterialCommunityIcons
+                  name={focused ? "wardrobe" : "wardrobe-outline"}
+                  size={27}
+                  color={focused ? COLORS.black : COLORS.mediumGray}
+                />
+              </View>
+            );
+          },
+          headerBackgroundContainerStyle: {
+            backgroundColor: COLORS.darkGray,
+          },
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="generateOutfits"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ color, focused }) => {
+            return (
+              <View
+                style={{
+                  width: 70,
+                  height: 70,
+                  borderRadius: 35,
+                  backgroundColor: COLORS.offWhite,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: -20,
+                  elevation: 4,
+                  shadowColor: focused ? "red" : COLORS.black,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                }}
+              >
+                <Ionicons
+                  name={focused ? "sparkles" : "sparkles-outline"}
+                  size={40}
+                  color={COLORS.black}
+                />
+              </View>
+            );
+          },
         }}
       />
     </Tabs>

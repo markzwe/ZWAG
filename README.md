@@ -15,36 +15,88 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```bash
    npx expo start
    ```
+# Outfit/FashionAI — AI-Powered Personal Stylist App
 
-In the output, you'll find options to open the app in a
+**Founder:** Zwe Htet  
+**Co-founder:** TBD
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Project Overview
 
-## Get a fresh project
+Outfit/FashionAI is an iOS-first mobile app designed to help users dress better by leveraging AI-powered outfit suggestions tailored to their personal wardrobe. Users upload photos of their clothing items, which are processed to create a digital wardrobe. The AI analyzes the wardrobe and recommends stylish, personalized outfit combinations based on occasion, mood, and fashion trends.
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
-```
+## Key Features
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **Digital Wardrobe Management**  
+  Upload multiple photos of clothing items (shirts, pants, shoes, accessories). Backgrounds are automatically removed using Apple’s VisionKit, and items are categorized with descriptive captions and metadata.
 
-## Learn more
+- **AI Outfit Suggestions**  
+  Uses OpenAI GPT-4o (or fine-tuned models) to generate outfit ideas considering occasion, weather, mood, and style preferences.
 
-To learn more about developing your project with Expo, look at the following resources:
+- **“Match My Fit” Mode**  
+  Select an anchor clothing item and get AI recommendations for matching or contrasting pieces from your wardrobe.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- **Find Clothes from Screenshots (Future)**  
+  Upload social media or shopping screenshots; AI will suggest similar items from your wardrobe.
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## Tech Stack
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Frontend:** React Native with Expo (iOS focused)  
+- **Backend:** Convex for serverless functions and database  
+- **AI Models:**  
+  - BLIP or similar for image captioning  
+  - OpenAI text embeddings for item vectorization  
+  - GPT-4o for outfit generation  
+- **Storage:** Cloudinary or AWS S3 for images
+
+---
+
+## Architecture & Workflow
+
+1. **Image Upload:** Users upload clothing photos.  
+2. **Captioning & Metadata Extraction:** AI generates descriptive captions and tags.  
+3. **Embedding & Storage:** Captions are embedded and stored for similarity search.  
+4. **Outfit Generation:** On request, filtered wardrobe items are sent to GPT-4o with style prompts for outfit suggestions.  
+5. **Display:** Suggested outfits with images are shown to users.
+
+---
+
+## Cost & Scaling Considerations
+
+- Use metadata filtering and vector search to limit GPT input size.  
+- Cache generated outfits to reduce repeated API calls.  
+- Offer subscription model to cover AI usage costs.
+
+---
+
+## Future Enhancements
+
+- Android support  
+- Social sharing and community features  
+- Integration with e-commerce platforms  
+- Style trend updates and personalized recommendations
+
+---
+
+## Getting Started
+
+Instructions for setting up the development environment, installing dependencies, and running the app will be added soon.
+
+---
+
+## License
+
+MIT License
+
+---
+
+Feel free to open issues or contribute!
+
+---
+
+*Developed by Zwe Htet*
