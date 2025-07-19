@@ -1,87 +1,110 @@
 import { COLORS, SPACING } from "@/constants/theme";
-import {
-  ExpoBackgroundRemoverView,
-  OnLoadEventPayload,
-  OnProcessingCompleteEventPayload,
-  OnSubjectLiftedEventPayload,
-} from "@/modules/expo-background-remover";
-import { useLocalSearchParams } from "expo-router";
-import React from "react";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Alert, Image, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from "react-native";
+import * as FileSystem from "expo-file-system";
+import { Ionicons } from "@expo/vector-icons";
 
-// This screen displays the Swift VisionKit interface for background removal
 export default function VisionKitRemoval() {
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
+  const [backgroundRemovedImageURI, setBackgroundRemovedImageURI] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // State to hold the URI of the image with background removed
-  const [backgroundRemovedImageURI, setBackgroundRemovedImageURI] =
-    React.useState<string | null>(null);
-
-  const handleLoad = (event: { nativeEvent: OnLoadEventPayload }) => {
-    console.log("VisionKit loaded:", event.nativeEvent);
-    const { status, imageSize } = event.nativeEvent;
-    if (status === "loaded" && imageSize) {
-      Alert.alert(
-        "Image Loaded",
-        `Image loaded successfully! Size: ${imageSize.width}x${imageSize.height}`
-      );
-    }
-  };
-
-
-  // const handleProcessingComplete = (event: {
-  //   nativeEvent: OnProcessingCompleteEventPayload;
-  // }) => {
-  //   console.log("Processing complete:", event.nativeEvent);
-  //   const { success, hasProcessedImage, processedImageUri, method } =
-  //     event.nativeEvent;
-  //   if (success && hasProcessedImage && processedImageUri) {
-  //     setBackgroundRemovedImageURI(processedImageUri);
-  //     Alert.alert(
-  //       "Processing Complete",
-  //       `Background removal completed using: ${method}`
-  //     );
+  // useEffect(() => {
+  //   if (!imageUri) {
+  //     setError("No image provided");
+  //     setLoading(false);
+  //     return;
   //   }
-  // };
 
-  const handleSubjectLifted = (event: {
-    nativeEvent: OnSubjectLiftedEventPayload;
-  }) => {
-    console.log("Subject lifted:", event.nativeEvent);
-    const { success, point } = event.nativeEvent;
-    if (success) {
-      Alert.alert(
-        "Subject Extracted",
-        `Subject successfully extracted at point (${Math.round(point.x)}, ${Math.round(point.y)})`
-      );
-    }
-  };
+  //   const processImage = async () => {
+  //     try {
+  //       const resultUri = await removeBg(imageUri);
+  //       setBackgroundRemovedImageURI(resultUri as string);
+  //     } catch (err) {
+  //       setError(err instanceof Error ? err.message : String(err));
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-  if (!imageUri) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>No image provided</Text>
-      </View>
-    );
-  }
+  //   processImage();
+  // }, [imageUri]);
+
+  // async function removeBg(imageUri: string) {
+  //   const apiKey = "7C5HUh99oUAkaN9j9dp8kbeY";
+
+  //   const formData = new FormData();
+  //   formData.append("size", "auto");
+  //   formData.append("image_file", {
+  //     uri: imageUri,
+  //     name: "image.jpg",
+  //     type: "image/jpeg",
+  //   });
+
+  //   const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+  //     method: "POST",
+  //     headers: {
+  //       "X-Api-Key": apiKey,
+  //     },
+  //     body: formData,
+  //   });
+
+  //   if (!response.ok) {
+  //     const errorText = await response.text();
+  //     throw new Error(`Remove.bg failed: ${response.status} ${errorText}`);
+  //   }
+
+  //   const blob = await response.blob();
+  //   const reader = new FileReader();
+
+  //   return new Promise<string>((resolve, reject) => {
+  //     reader.onloadend = async () => {
+  //       try {
+  //         const base64Data = reader.result!.toString().split(",")[1];
+  //         const fileUri = FileSystem.documentDirectory + "no-bg.png";
+  //         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+  //           encoding: FileSystem.EncodingType.Base64,
+  //         });
+  //         resolve(fileUri);
+  //       } catch (error) {
+  //         reject(error);
+  //       }
+  //     };
+
+  //     reader.onerror = reject;
+  //     reader.readAsDataURL(blob);
+  //   });
+  // }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>VisionKit Background Removal</Text>
-      {/* Only render the image if the URI is available */}
+
+      {loading && <ActivityIndicator size="large" color={COLORS.textPrimary} />}
+      {error && <Text style={styles.errorText}>{error}</Text>}
       {backgroundRemovedImageURI && (
         <Image
           source={{ uri: backgroundRemovedImageURI }}
           style={styles.visionKitView}
+          resizeMode="contain"
         />
       )}
-      {/* <ExpoBackgroundRemoverView
-        imageUri={imageUri}
-        style={styles.visionKitView}
-        onLoad={handleLoad}
-        onProcessingComplete={handleProcessingComplete}
-        onSubjectLifted={handleSubjectLifted}
-      /> */}
+   
+        <TouchableOpacity
+          style={styles.primaryActionButton}
+          onPress={() =>
+            router.push({
+              pathname: "/screens/addedItem",
+              params: { processedImageUri: imageUri }, // Pass the original image URI for testing
+            })
+          }
+          activeOpacity={0.8}
+        >
+          <Text style={styles.primaryActionButtonText}>Continue</Text>
+          <Ionicons name="arrow-forward" size={20} color={COLORS.pureWhite} />
+        </TouchableOpacity>
     </View>
   );
 }
@@ -104,14 +127,26 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.primaryBackground,
-  },
   errorText: {
-    fontSize: 18,
-    color: COLORS.textPrimary,
+    fontSize: 16,
+    color: "red",
+    marginTop: 20,
+    textAlign: "center",
+  },
+  primaryActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.textPrimary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  primaryActionButtonText: {
+    color: COLORS.pureWhite,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginRight: 8,
   },
 });

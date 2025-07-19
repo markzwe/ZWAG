@@ -11,6 +11,9 @@ const COLORS = {
   warmGrayAccent: '#F5F5F5',
   divider: '#D6D6D6',
   border: '#E0E0E0',
+  red: '#540000ff',
+  blue: '#0059b2ff',
+  green: '#005904ff',
 
   error: '#B00020',
   success: '#2E7D32',
@@ -56,6 +59,7 @@ const BORDER_RADIUS = {
   sm: 3,
   md: 6,
   lg: 9,
+  apple: 38, // Apple-style rounded corners
 };
 
 const SHADOWS = {

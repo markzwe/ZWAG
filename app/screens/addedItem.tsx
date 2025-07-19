@@ -5,99 +5,247 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import React, { useState } from "react";
 import { Image } from "expo-image";
 import { COLORS, SPACING, SHADOWS, BORDER_RADIUS } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import * as FileSystem from "expo-file-system";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import CategoryModal from "@/models/CategoryModal";
 
 export default function AddedItem() {
-  const { imageUri, processedImageUri: initialProcessedImageUri } =
-    useLocalSearchParams<{
-      imageUri: string;
-      processedImageUri?: string;
-    }>();
-  const [processedImageUri, setProcessedImageUri] = useState<string | null>(
-    initialProcessedImageUri || null
-  );
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { processedImageUri: initialProcessedImageUri } = useLocalSearchParams<{
+    processedImageUri?: string;
+  }>();
+  const processedImageUri = initialProcessedImageUri || null;
 
-  const retryProcessing = () => {
-    router.push({
-      pathname: "/screens/visionKitRemoval",
-      params: { imageUri },
-    });
+  const [category, setCategory] = useState<string>("");
+  const [color, setColor] = useState<string>("");
+  const [caption, setCaption] = useState<string>("");
+  const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
+
+  const styleOptions = ["Casual", "Formal", "Sportswear", "Accessories"];
+
+  const generatedUploadUrl = useMutation(api.items.generatedUploadUrl);
+  const createItem = useMutation(api.items.uploadItem);
+  const [subcategory, setSubcategory] = useState<string[]>([]);
+
+  const toggleSubcategory = (option: string) => {
+    setSubcategory((prev) =>
+      prev.includes(option)
+        ? prev.filter((item) => item !== option)
+        : [...prev, option]
+    );
   };
 
-  const retakePhoto = () => {
-    setProcessedImageUri(null);
-    router.back();
-  };
+  const saveToWardrobe = async () => {
+    if (!processedImageUri) return;
+    try {
+      const uploadUrl = await generatedUploadUrl();
+      const uploadResult = await FileSystem.uploadAsync(
+        uploadUrl,
+        processedImageUri,
+        {
+          httpMethod: "POST",
+          uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+          mimeType: "image/jpeg",
+        }
+      );
 
-  const saveToWardrobe = () => {
-    if (processedImageUri) {
+      if (uploadResult.status !== 200) throw new Error("Upload failed");
+
+      const { storageId } = JSON.parse(uploadResult.body);
+      await createItem({
+        storageId,
+        caption,
+        category,
+        style: styleOptions, // Use the selected styles
+        subcategory: "shirt",
+        color,
+      });
+      router.push("/(tabs)");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Upload Error", "There was a problem uploading the item.");
+    } finally {
       Alert.alert("Success", "Clothing item added to your wardrobe!");
-      // TODO: Add your save logic here
+      setCategory("");
+      setColor("");
+      setCaption("");
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        {processedImageUri
-          ? "Background Removed!"
-          : "Process Your Clothing Item"}
-      </Text>
-
-      {/* Original Image */}
-      <View style={styles.imageContainer}>
-        <Text style={styles.sectionTitle}>Original Photo</Text>
-        <Image source={{ uri: imageUri }} style={styles.image} />
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
-        {!processedImageUri && (
-          <TouchableOpacity
-            style={[
-              styles.processButton,
-              isProcessing && styles.processingButton,
-            ]}
-            onPress={retryProcessing}
-            disabled={isProcessing}
-          >
-            <Ionicons name="cut-outline" size={20} color={COLORS.pureWhite} />
-            <Text style={styles.processButtonText}>Process with VisionKit</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity style={styles.secondaryButton} onPress={retakePhoto}>
-          <Ionicons name="camera" size={20} color={COLORS.textPrimary} />
-          <Text style={styles.secondaryButtonText}>Retake Photo</Text>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
+        <Text style={styles.title}>Add Item</Text>
+        <View style={styles.placeholder} />
       </View>
 
-      {/* Processed Image */}
-      {processedImageUri && (
-        <>
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Image Preview Card */}
+        <View style={styles.imageCard}>
           <View style={styles.imageContainer}>
-            <Text style={styles.sectionTitle}>Processed Image</Text>
-            <View style={styles.whiteBackgroundContainer}>
+            {processedImageUri ? (
               <Image
                 source={{ uri: processedImageUri }}
-                style={styles.processedImage}
+                style={styles.image}
+                resizeMode="cover"
               />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons
+                  name="image-outline"
+                  size={48}
+                  color={COLORS.textSecondary}
+                />
+                <Text style={styles.placeholderText}>No image selected</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.imageOverlay} />
+        </View>
+
+        {/* Form Container */}
+        <View style={styles.formContainer}>
+          {/* Category Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Category</Text>
+            <TouchableOpacity
+              style={styles.inputCard}
+              onPress={() => setShowCategoryModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[styles.pickerText, !category && styles.placeholderText]}
+              >
+                {category || "Select category"}
+              </Text>
+              <View style={styles.inputIcon}>
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Subcategory Section */}
+          {/* Style Section */}
+          {/* Style Section (Multi-select Chips) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Style</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {styleOptions.map((styleOption) => {
+                const isSelected = subcategory.includes(styleOption);
+                return (
+                  <TouchableOpacity
+                    key={styleOption}
+                    onPress={() => toggleSubcategory(styleOption)}
+                    style={[
+                      styles.styleChip,
+                      isSelected && styles.styleChipSelected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.styleChipText,
+                        isSelected && styles.styleChipTextSelected,
+                      ]}
+                    >
+                      {styleOption}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+          {/* Color Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Color</Text>
+            <View style={styles.inputCard}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Navy blue, charcoal gray..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={color}
+                onChangeText={setColor}
+                selectionColor={COLORS.textPrimary}
+              />
+              <View style={styles.inputIcon}>
+                <Ionicons
+                  name="color-palette-outline"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+              </View>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={saveToWardrobe}>
-            <Ionicons name="checkmark" size={20} color={COLORS.pureWhite} />
-            <Text style={styles.saveButtonText}>Add to Wardrobe</Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </ScrollView>
+          {/* Description Section */}
+          <View style={[styles.section, ]}>
+            <Text style={styles.sectionTitle}>Description</Text>
+            <View style={[styles.inputCard, styles.textAreaCard]}>
+              <TextInput
+                style={[styles.textInput, styles.textArea]}
+                placeholder="Casual cotton t-shirt, perfect for everyday wear..."
+                placeholderTextColor={COLORS.textSecondary}
+                value={caption}
+                onChangeText={setCaption}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                selectionColor={COLORS.textPrimary}
+              />
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Action */}
+      <View style={styles.bottomContainer}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            (!category || !subcategory) && styles.saveButtonDisabled,
+          ]}
+          onPress={saveToWardrobe}
+          disabled={!category || !subcategory}
+        >
+          <Ionicons
+            name="checkmark-circle"
+            size={22}
+            color={COLORS.pureWhite}
+          />
+          <Text style={styles.saveButtonText}>Save to Wardrobe</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Category Modal */}
+      <CategoryModal
+        visible={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        setCategory={setCategory}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
@@ -105,93 +253,200 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.primaryBackground,
-    padding: SPACING.md,
+  },
+  picker: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingRight: 50,
+    fontWeight: "400",
+    backgroundColor: "transparent",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 50,
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.primaryBackground,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.pureWhite,
+    justifyContent: "center",
+    alignItems: "center",
+    ...SHADOWS.sm,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "600",
     color: COLORS.textPrimary,
-    textAlign: "center",
-    marginBottom: SPACING.md,
+    letterSpacing: -0.3,
+  },
+  placeholder: {
+    width: 44,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: SPACING.sm,
+    paddingBottom: 80,
+  },
+  imageCard: {
+    position: "relative",
+    marginBottom: SPACING.xl,
+    borderRadius: BORDER_RADIUS.lg,
+    overflow: "hidden",
+    backgroundColor: COLORS.pureWhite,
+    ...SHADOWS.md,
   },
   imageContainer: {
+    
+    height: 320,
+    backgroundColor: COLORS.surface,
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+  },
+  imagePlaceholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  placeholderText: {
+    marginTop: SPACING.sm,
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+  },
+  imageOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  formContainer: {
+    backgroundColor: COLORS.pureWhite,
+    borderRadius: BORDER_RADIUS.lg,
+    width: "100%",
+    ...SHADOWS.sm,
+  },
+  section: {
+    paddingHorizontal: SPACING.sm,
     marginBottom: SPACING.lg,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: COLORS.textSecondary,
+    color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
+    letterSpacing: -0.2,
   },
-  image: {
-    width: "100%",
-    height: 300,
-    borderRadius: BORDER_RADIUS.lg,
-    backgroundColor: COLORS.surface,
+  inputCard: {
+    position: "relative",
+    backgroundColor: COLORS.offWhite,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: "hidden",
   },
-  whiteBackgroundContainer: {
-    backgroundColor: COLORS.pureWhite,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.sm,
-    ...SHADOWS.sm,
+  textAreaCard: {
+    minHeight: 80,
   },
-  processedImage: {
-    width: "100%",
-    height: 300,
-    borderRadius: BORDER_RADIUS.lg,
-  },
-  buttonContainer: {
-    gap: SPACING.sm,
-    marginBottom: SPACING.lg,
-  },
-  processButton: {
-    backgroundColor: COLORS.black,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.lg,
-    gap: SPACING.sm,
-    ...SHADOWS.md,
-  },
-  processingButton: {
-    backgroundColor: COLORS.mediumGray,
-  },
-  processButtonText: {
-    color: COLORS.pureWhite,
+  pickerText: {
     fontSize: 16,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    backgroundColor: COLORS.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    color: COLORS.textPrimary,
+    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
+    paddingRight: 50,
+    fontWeight: "400",
+  },
+
+  textInput: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    paddingRight: 50,
+    fontWeight: "400",
+  },
+  textArea: {
+    minHeight: 80,
+    paddingTop: SPACING.md,
+  },
+  inputIcon: {
+    position: "absolute",
+    right: SPACING.md,
+    top: "50%",
+    transform: [{ translateY: -10 }],
+  },
+  styleChip: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.offWhite,
     borderRadius: BORDER_RADIUS.lg,
-    gap: SPACING.sm,
+    marginRight: SPACING.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  secondaryButtonText: {
-    color: COLORS.textPrimary,
-    fontSize: 16,
+
+  styleChipSelected: {
+    backgroundColor: COLORS.textPrimary,
+    borderColor: COLORS.textPrimary,
+  },
+
+  styleChipText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
     fontWeight: "500",
   },
+
+  styleChipTextSelected: {
+    color: COLORS.pureWhite,
+  },
+
+  ChipText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+  },
+
+  bottomContainer: {
+    position: "absolute",
+    bottom: 5,
+    left: 0,
+    right: 0,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'transparent', // Use transparent to avoid visual issues
+  },
   saveButton: {
-    backgroundColor: COLORS.success || COLORS.black,
+    backgroundColor: COLORS.textPrimary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.md ,
     borderRadius: BORDER_RADIUS.lg,
-    gap: SPACING.sm,
     ...SHADOWS.md,
+  },
+  saveButtonDisabled: {
+    backgroundColor: COLORS.textSecondary,
+    opacity: 0.6,
   },
   saveButtonText: {
     color: COLORS.pureWhite,
     fontSize: 16,
     fontWeight: "600",
+    marginLeft: SPACING.sm,
+    letterSpacing: -0.2,
   },
 });

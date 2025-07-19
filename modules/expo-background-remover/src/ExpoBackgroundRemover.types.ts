@@ -41,11 +41,6 @@ export type RemoveBackgroundResult = {
 export type ExpoBackgroundRemoverViewProps = {
   imageUri: string;
   style?: StyleProp<ViewStyle>;
-  
-  // Event handlers (all optional)
-  onLoad?: (event: { nativeEvent: OnLoadEventPayload }) => void;
-  onProcessingComplete?: (event: { nativeEvent: OnProcessingCompleteEventPayload }) => void;
-  onSubjectLifted?: (event: { nativeEvent: OnSubjectLiftedEventPayload }) => void;
 };
 
 // ✅ Module events (keep for backward compatibility)

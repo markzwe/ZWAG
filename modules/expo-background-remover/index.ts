@@ -1,4 +1,4 @@
-import { NativeModulesProxy, EventEmitter } from 'expo-modules-core';
+import { EventEmitter } from 'expo-modules-core';
 import { requireNativeViewManager } from 'expo-modules-core';
 
 // Import the native module. On web, it will be resolved to ExpoBackgroundRemover.web.ts

@@ -31,17 +31,21 @@ export const createUser = mutation({
 });
 
 //helper function 
-export async function getAuthenticatedUser(ctx: QueryCtx |  MutationCtx ) {
+export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
 
-    const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthorized: No identity found.");
+  }
 
-       if (!identity) throw new Error("Unauthorized")
+  const currentUser = await ctx.db
+    .query("users")
+    .withIndex("byClerkId", (q) => q.eq("clerkId", identity.subject))
+    .first();
 
-       const currentUser = await ctx.db.query("users").withIndex(
-           "byClerkId", (q) => q.eq("clerkId", identity.subject))
-           .first();
-        if(!currentUser) throw new Error("User not found");
-        
-        return currentUser;
-   
+  if (!currentUser) {
+    throw new Error(`User not found for Clerk ID: ${identity.subject}`);
+  }
+
+  return currentUser;
 }
