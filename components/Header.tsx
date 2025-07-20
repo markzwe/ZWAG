@@ -19,7 +19,7 @@ export default function Header() {
           source={require("@/assets/images/react-logo.png")}
           style={styles.logoImage}
         />
-        <Text style={styles.appTitle}>AiOutfit</Text>
+        <Text style={styles.appTitle}>Mantire</Text>
       </View>
 
       {/* Menu Button */}
@@ -36,7 +36,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
     backgroundColor: COLORS.primaryBackground,
     ...SHADOWS.sm,
   },

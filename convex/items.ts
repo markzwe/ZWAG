@@ -12,8 +12,8 @@ export const uploadItem = mutation({
     args: {
         storageId: v.id("_storage"),
         category: v.string(),
+        subcategory: v.string(),
         style: v.array(v.string()), // e.g. ["casual", "formal"]
-        subcategory: v.optional(v.string()),
         color: v.optional(v.string()),
         caption: v.string(),
         embedding: v.optional(v.array(v.float64())),
@@ -29,8 +29,8 @@ export const uploadItem = mutation({
             userId: user._id,
             storageId: args.storageId,
             category: args.category,
-            style: args.style,
             subcategory: args.subcategory,
+            style: args.style,
             color: args.color,
             caption: args.caption,
             embedding: args.embedding,
@@ -45,7 +45,7 @@ export const uploadItem = mutation({
 
 export const getItem = query({
     args: {
-        category: v.string(),
+        category: v.optional(v.string()),
         subcategory: v.optional(v.string()),
         embedding: v.optional(v.array(v.float64())),
         color: v.optional(v.string()),
@@ -55,7 +55,6 @@ export const getItem = query({
         // Get the authenticated user
         // This will throw an error if the user is not authenticated
         const currentUser = await getAuthenticatedUser(ctx);
-        if (!currentUser) throw new Error("Unauthorized");
         
         // Start with the base query
         const items = ctx.db.query("items")
@@ -81,3 +80,55 @@ export const getItem = query({
         return await items.collect();
     }
 })
+
+export const countItemsByCategory = query({
+  handler: async (ctx) => {
+    // Get the authenticated user
+    const currentUser = await getAuthenticatedUser(ctx);
+
+    const items = await ctx.db
+      .query("items")
+      .withIndex("by_userId", (q) => q.eq("userId", currentUser._id))
+      .collect();
+
+    const counts: Record<string, number> = {};
+
+    for (const item of items) {
+      const category = item.category;
+      counts[category] = (counts[category] || 0) + 1;
+    }
+
+    return counts;
+  },
+});
+
+expo
+export const getPreviewImageByCategory = query({
+  handler: async (ctx): Promise<
+    { category: string; images: string[] }[]
+  > => {
+    const currentUser = await getAuthenticatedUser(ctx);
+
+    const items = await ctx.db
+      .query("items")
+      .withIndex("by_userId_category", (q) =>
+        q.eq("userId", currentUser._id)
+      )
+      .collect();
+
+    const categoryImages: Record<string, string[]> = {};
+
+    for (const item of items) {
+      const category = item.category;
+      if (!categoryImages[category]) {
+        categoryImages[category] = [];
+      }
+      categoryImages[category].push(item.imageUrl);
+    }
+
+    return Object.entries(categoryImages).map(([category, images]) => ({
+      category,
+      images,
+    }));
+  },
+});

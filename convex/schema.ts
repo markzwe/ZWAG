@@ -24,18 +24,16 @@ export default defineSchema({
     items: defineTable({
       userId: v.id("users"),
       imageUrl: v.string(), // image hosted on storage or CDN
-  
       storageId: v.string(), // storage ID for the image
       caption: v.string(), // e.g. “white oversized hoodie”
       category: v.string(), // e.g. “top”, “bottom”, “outerwear”
+      subcategory: v.string(), // e.g. “hoodie”, “jeans”
       style: v.array(v.string()), // e.g. ["casual", "formal"]
-      subcategory: v.optional(v.string()), // e.g. “t-shirt”, “jeans”
       color: v.optional(v.string()), // e.g. “black”, “navy”
       embedding: v.optional(v.array(v.float64())), // image vector
     })  
     .index("by_userId", ["userId"])
     .index("by_userId_category", ["userId", "category"])
-    .index("by_userId_subcategory", ["userId", "subcategory"])
     .index("by_userId_color", ["userId", "color"])
     .index("by_userId_embedding", ["userId", "embedding"])
     .index("by_userId_caption", ["userId", "caption"])

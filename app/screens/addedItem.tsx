@@ -1,23 +1,23 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-  TextInput,
-  KeyboardAvoidingView,
-} from "react-native";
-import { Picker } from "@react-native-picker/picker";
-import React, { useState } from "react";
-import { Image } from "expo-image";
-import { COLORS, SPACING, SHADOWS, BORDER_RADIUS } from "@/constants/theme";
-import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import * as FileSystem from "expo-file-system";
-import { useMutation } from "convex/react";
+import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
-import CategoryModal from "@/models/CategoryModal";
+import CategoryModal from "@/modals/CategoryModal";
+import { Ionicons } from "@expo/vector-icons";
+import { useMutation } from "convex/react";
+import * as FileSystem from "expo-file-system";
+import { Image } from "expo-image";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useState } from "react";
+
+import {
+  Alert,
+  KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function AddedItem() {
   const { processedImageUri: initialProcessedImageUri } = useLocalSearchParams<{
@@ -30,14 +30,22 @@ export default function AddedItem() {
   const [caption, setCaption] = useState<string>("");
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
 
-  const styleOptions = ["Casual", "Formal", "Sportswear", "Accessories"];
+  const styleOptions = [
+    "Casual",
+    "Formal",
+    "Business",
+    "Sportswear",
+    "Loungewear",
+    "Streetwear",
+  ];
 
   const generatedUploadUrl = useMutation(api.items.generatedUploadUrl);
   const createItem = useMutation(api.items.uploadItem);
-  const [subcategory, setSubcategory] = useState<string[]>([]);
+  const [subcategory, setSubcategory] = useState<string>("");
+  const [style, setStyle] = useState<string[]>([]);
 
-  const toggleSubcategory = (option: string) => {
-    setSubcategory((prev) =>
+  const toggleStyle = (option: string) => {
+    setStyle((prev) =>
       prev.includes(option)
         ? prev.filter((item) => item !== option)
         : [...prev, option]
@@ -65,8 +73,8 @@ export default function AddedItem() {
         storageId,
         caption,
         category,
+        subcategory, // Use the selected subcategory
         style: styleOptions, // Use the selected styles
-        subcategory: "shirt",
         color,
       });
       router.push("/(tabs)");
@@ -107,7 +115,7 @@ export default function AddedItem() {
               <Image
                 source={{ uri: processedImageUri }}
                 style={styles.image}
-                resizeMode="cover"
+                contentFit="cover"
               />
             ) : (
               <View style={styles.imagePlaceholder}>
@@ -136,7 +144,9 @@ export default function AddedItem() {
               <Text
                 style={[styles.pickerText, !category && styles.placeholderText]}
               >
-                {category || "Select category"}
+                {category && subcategory
+                  ? `${category} > ${subcategory}`
+                  : "Select category"}
               </Text>
               <View style={styles.inputIcon}>
                 <Ionicons
@@ -148,18 +158,17 @@ export default function AddedItem() {
             </TouchableOpacity>
           </View>
 
-          {/* Subcategory Section */}
           {/* Style Section */}
           {/* Style Section (Multi-select Chips) */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Style</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {styleOptions.map((styleOption) => {
-                const isSelected = subcategory.includes(styleOption);
+                const isSelected = style.includes(styleOption);
                 return (
                   <TouchableOpacity
                     key={styleOption}
-                    onPress={() => toggleSubcategory(styleOption)}
+                    onPress={() => toggleStyle(styleOption)}
                     style={[
                       styles.styleChip,
                       isSelected && styles.styleChipSelected,
@@ -201,8 +210,10 @@ export default function AddedItem() {
           </View>
 
           {/* Description Section */}
-          <View style={[styles.section, ]}>
-            <Text style={styles.sectionTitle}>Description</Text>
+          <View style={[styles.section]}>
+            <Text style={styles.sectionTitle}>
+              {category ? `More about this ${subcategory}` : "Description"}
+            </Text>
             <View style={[styles.inputCard, styles.textAreaCard]}>
               <TextInput
                 style={[styles.textInput, styles.textArea]}
@@ -225,10 +236,11 @@ export default function AddedItem() {
         <TouchableOpacity
           style={[
             styles.saveButton,
-            (!category || !subcategory) && styles.saveButtonDisabled,
+            (!category || !subcategory || style.length === 0) &&
+              styles.saveButtonDisabled,
           ]}
           onPress={saveToWardrobe}
-          disabled={!category || !subcategory}
+          disabled={!category || !subcategory || style.length === 0}
         >
           <Ionicons
             name="checkmark-circle"
@@ -244,6 +256,7 @@ export default function AddedItem() {
         visible={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}
         setCategory={setCategory}
+        setSubcategory={setSubcategory}
       />
     </KeyboardAvoidingView>
   );
@@ -295,7 +308,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SPACING.sm,
-    paddingBottom: 80,
+    paddingBottom: 20,
   },
   imageCard: {
     position: "relative",
@@ -306,7 +319,6 @@ const styles = StyleSheet.create({
     ...SHADOWS.md,
   },
   imageContainer: {
-    
     height: 320,
     backgroundColor: COLORS.surface,
   },
@@ -427,14 +439,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingBottom: 20,
     borderTopWidth: 1,
-    borderTopColor: 'transparent', // Use transparent to avoid visual issues
+    borderTopColor: "transparent", // Use transparent to avoid visual issues
   },
   saveButton: {
     backgroundColor: COLORS.textPrimary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.md ,
+    paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
     ...SHADOWS.md,
   },
