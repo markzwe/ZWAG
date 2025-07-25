@@ -25,9 +25,6 @@ export default function Closet() {
     Record<string, number>
   >({});
 
-  console.log("Count Items:", countItems);
-  console.log("Image URLs:", getImageUrls);
-
   const CATEGORY_NAMES: Record<string, string> = {
     top: "Tops",
     bottom: "Bottoms",
@@ -154,12 +151,30 @@ export default function Closet() {
         >
           <View style={styles.contentContainer}>
             {/* Header Section */}
-            <View style={styles.headerSection}>
-              <Text style={styles.subtitle}>
-                Organize and discover your style
-              </Text>
-            </View>
+            <View style={styles.headerSection}></View>
 
+            {/* Add Button */}
+            {categories.length > 0 && (
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => router.push("/screens/addItem")}
+              >
+                <Ionicons
+                  name="add"
+                  size={28}
+                  color={COLORS.pureWhite || "#FFFFFF"}
+                />
+                <Text
+                  style={{
+                    color: COLORS.pureWhite,
+                    fontSize: FONT_SIZES.lg,
+                    fontWeight: "600",
+                  }}
+                >
+                  Add Item
+                </Text>
+              </TouchableOpacity>
+            )}
             {/* Browse All Section */}
             <TouchableOpacity
               style={styles.browseAllCard}
@@ -183,28 +198,6 @@ export default function Closet() {
                 </View>
               </View>
             </TouchableOpacity>
-            {/* Add Button */}
-            {categories.length > 0 && (
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => router.push("/screens/addItem")}
-              >
-                <Ionicons
-                  name="add"
-                  size={28}
-                  color={COLORS.pureWhite || "#FFFFFF"}
-                />
-                <Text
-                  style={{
-                    color: COLORS.pureWhite,
-                    fontSize: FONT_SIZES.lg,
-                    fontWeight: "600",
-                  }}
-                >
-                  Add Item
-                </Text>
-              </TouchableOpacity>
-            )}
 
             {/* Categories Header */}
             <View style={styles.sectionHeader}>
@@ -260,7 +253,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 16,
     padding: 20,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
     shadowColor: "#000",
@@ -300,8 +293,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.lg,
-    marginTop: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
     fontSize: 20,
@@ -396,8 +388,9 @@ const styles = StyleSheet.create({
   // Floating Add Button
   createButton: {
     backgroundColor: COLORS.black,
+    marginBottom: SPACING.md + 5,
     width: "100%",
-    height: 36,
+    height: 45,
     borderRadius: BORDER_RADIUS.apple,
     alignItems: "center",
     justifyContent: "center",

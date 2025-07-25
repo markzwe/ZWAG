@@ -1,15 +1,25 @@
 import { COLORS, SPACING } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Image, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from "react-native";
-import * as FileSystem from "expo-file-system";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function VisionKitRemoval() {
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
-  const [backgroundRemovedImageURI, setBackgroundRemovedImageURI] = useState<string | null>(null);
+  const [backgroundRemovedImageURI, setBackgroundRemovedImageURI] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isReadyContinue, setIsReadyContinue] = useState<boolean>(false); // State to control readiness for navigation
 
   // useEffect(() => {
   //   if (!imageUri) {
@@ -36,7 +46,8 @@ export default function VisionKitRemoval() {
   //   const apiKey = "7C5HUh99oUAkaN9j9dp8kbeY";
 
   //   const formData = new FormData();
-  //   formData.append("size", "auto");
+  //   formData.append("size", "preview");
+  //   formData.append("crop", "true");
   //   formData.append("image_file", {
   //     uri: imageUri,
   //     name: "image.jpg",
@@ -63,13 +74,16 @@ export default function VisionKitRemoval() {
   //     reader.onloadend = async () => {
   //       try {
   //         const base64Data = reader.result!.toString().split(",")[1];
-  //         const fileUri = FileSystem.documentDirectory + "no-bg.png";
+  //         const uniqueFileName = `no-bg-${Date.now()}.png`;
+  //         const fileUri = FileSystem.documentDirectory + uniqueFileName;
   //         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
   //           encoding: FileSystem.EncodingType.Base64,
   //         });
   //         resolve(fileUri);
   //       } catch (error) {
   //         reject(error);
+  //       } finally {
+  //         setIsReadyContinue(true);
   //       }
   //     };
 
@@ -77,6 +91,10 @@ export default function VisionKitRemoval() {
   //     reader.readAsDataURL(blob);
   //   });
   // }
+  console.log(
+    "Processed Image URI removed BG in visionKitRemoval:",
+    backgroundRemovedImageURI
+  );
 
   return (
     <View style={styles.container}>
@@ -86,12 +104,13 @@ export default function VisionKitRemoval() {
       {error && <Text style={styles.errorText}>{error}</Text>}
       {backgroundRemovedImageURI && (
         <Image
-          source={{ uri: backgroundRemovedImageURI }}
+          source={{ uri: imageUri }} //Replace with the processed image URI
           style={styles.visionKitView}
           resizeMode="contain"
         />
       )}
-   
+
+      {/* {isReadyContinue && ( */}
         <TouchableOpacity
           style={styles.primaryActionButton}
           onPress={() =>
@@ -105,14 +124,14 @@ export default function VisionKitRemoval() {
           <Text style={styles.primaryActionButtonText}>Continue</Text>
           <Ionicons name="arrow-forward" size={20} color={COLORS.pureWhite} />
         </TouchableOpacity>
-    </View>
+=    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primaryBackground,
+    backgroundColor: COLORS.red,
     padding: SPACING.md,
     paddingTop: 50,
   },

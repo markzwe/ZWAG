@@ -1,5 +1,6 @@
 import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
+import BrandModal from "@/modals/BrandModal";
 import CategoryModal from "@/modals/CategoryModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
@@ -20,15 +21,17 @@ import {
 } from "react-native";
 
 export default function AddedItem() {
-  const { processedImageUri: initialProcessedImageUri } = useLocalSearchParams<{
+  const { processedImageUri } = useLocalSearchParams<{
     processedImageUri?: string;
   }>();
-  const processedImageUri = initialProcessedImageUri || null;
+  // Debugging: Log the processed image URI
+  console.log("Processed Image URI:", processedImageUri);
 
   const [category, setCategory] = useState<string>("");
   const [color, setColor] = useState<string>("");
   const [caption, setCaption] = useState<string>("");
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
+  const [showBrandModal, setShowBrandModal] = useState<boolean>(false);
 
   const styleOptions = [
     "Casual",
@@ -43,6 +46,7 @@ export default function AddedItem() {
   const createItem = useMutation(api.items.uploadItem);
   const [subcategory, setSubcategory] = useState<string>("");
   const [style, setStyle] = useState<string[]>([]);
+  const [brand, setBrand] = useState<string>("");
 
   const toggleStyle = (option: string) => {
     setStyle((prev) =>
@@ -95,7 +99,7 @@ export default function AddedItem() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.push("/(tabs)",)}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
@@ -115,7 +119,7 @@ export default function AddedItem() {
               <Image
                 source={{ uri: processedImageUri }}
                 style={styles.image}
-                contentFit="cover"
+                contentFit="fill"
               />
             ) : (
               <View style={styles.imagePlaceholder}>
@@ -209,6 +213,29 @@ export default function AddedItem() {
             </View>
           </View>
 
+          {/* Brand Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Brand</Text>
+            <TouchableOpacity
+              style={styles.inputCard}
+              onPress={() => setShowBrandModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[styles.pickerText, !category && styles.placeholderText]}
+              >
+                {brand || "Select brand"}
+              </Text>
+              <View style={styles.inputIcon}>
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+
           {/* Description Section */}
           <View style={[styles.section]}>
             <Text style={styles.sectionTitle}>
@@ -257,6 +284,13 @@ export default function AddedItem() {
         onClose={() => setShowCategoryModal(false)}
         setCategory={setCategory}
         setSubcategory={setSubcategory}
+      />
+
+      {/* Brand Modal */}
+      <BrandModal
+        visible={showBrandModal}
+        onClose={() => setShowBrandModal(false)}
+        setBrand={setBrand}
       />
     </KeyboardAvoidingView>
   );
@@ -312,6 +346,8 @@ const styles = StyleSheet.create({
   },
   imageCard: {
     position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: SPACING.xl,
     borderRadius: BORDER_RADIUS.lg,
     overflow: "hidden",
@@ -319,12 +355,17 @@ const styles = StyleSheet.create({
     ...SHADOWS.md,
   },
   imageContainer: {
-    height: 320,
+    width: "100%",
+    aspectRatio: 1,
     backgroundColor: COLORS.surface,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
   image: {
     width: "100%",
     height: "100%",
+    resizeMode: "contain",
   },
   imagePlaceholder: {
     flex: 1,

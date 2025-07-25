@@ -1,4 +1,4 @@
-package com.markzwe.AiOutfit
+package com.markzwe.ZWAG
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

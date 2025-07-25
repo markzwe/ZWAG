@@ -1,4 +1,4 @@
-package com.markzwe.AiOutfit
+package com.markzwe.ZWAG
 
 import android.app.Application
 import android.content.res.Configuration

@@ -16,6 +16,7 @@ export const uploadItem = mutation({
         style: v.array(v.string()), // e.g. ["casual", "formal"]
         color: v.optional(v.string()),
         caption: v.string(),
+        brand: v.optional(v.string()),
         embedding: v.optional(v.array(v.float64())),
     },
     handler: async (ctx, args) => {
@@ -34,6 +35,7 @@ export const uploadItem = mutation({
             color: args.color,
             caption: args.caption,
             embedding: args.embedding,
+            brand: args.brand, 
             imageUrl 
         };
 
@@ -45,42 +47,69 @@ export const uploadItem = mutation({
 
 export const getItem = query({
     args: {
-        category: v.optional(v.string()),
+        itemId: v.optional(v.id("items")),
+        category: v.optional(v.union(v.string(), v.array(v.string()))),
         subcategory: v.optional(v.string()),
         embedding: v.optional(v.array(v.float64())),
         color: v.optional(v.string()),
         caption: v.optional(v.string()),
+        style: v.optional(v.array(v.string())),
+        brand: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         // Get the authenticated user
-        // This will throw an error if the user is not authenticated
         const currentUser = await getAuthenticatedUser(ctx);
-        
-        // Start with the base query
-        const items = ctx.db.query("items")
-            .filter((q) => q.eq(q.field("userId"), currentUser._id));
 
-        // Apply filters based on provided arguments
+        // Start with the base query
+        let query = ctx.db.query("items").filter((q) => q.eq(q.field("userId"), currentUser._id));
+
+        // Chain filters correctly
         if (args.caption) {
-            items.filter((q) => q.eq(q.field("caption"), args.caption));
+            query = query.filter((q) => q.eq(q.field("caption"), args.caption));
         }
         if (args.embedding) {
-            items.filter((q) => q.eq(q.field("embedding"), args.embedding));
-       
-        }if (args.category) {
-            items.filter((q) => q.eq(q.field("category"), args.category));
+            query = query.filter((q) => q.eq(q.field("embedding"), args.embedding));
+        }
+        if (args.category !== undefined) {
+            if (Array.isArray(args.category)) {
+                query = query.filter((q) =>
+                    q.or(...(args.category as string[]).map((cat: string) => q.eq(q.field("category"), cat)))
+                );
+            } else {
+                query = query.filter((q) => q.eq(q.field("category"), args.category as string));
+            }
         }
         if (args.subcategory) {
-            items.filter((q) => q.eq(q.field("subcategory"), args.subcategory));
+            query = query.filter((q) => q.eq(q.field("subcategory"), args.subcategory));
         }
         if (args.color) {
-            items.filter((q) => q.eq(q.field("color"), args.color));
+            query = query.filter((q) => q.eq(q.field("color"), args.color));
         }
-        
-        return await items.collect();
+        if (args.style) {
+            query = query.filter((q) => q.eq(q.field("style"), args.style));
+        }
+        if (args.brand) {
+            query = query.filter((q) => q.eq(q.field("brand"), args.brand));
+        }
+        if(args.itemId) {
+            query = query.filter((q) => q.eq(q.field("_id"), args.itemId));
+        }
+        return await query.collect();
     }
 })
+export const getOneItemById = query({
+  args: { itemId: v.id("items") },
+  handler: async (ctx, { itemId }) => {
+    const currentUser = await getAuthenticatedUser(ctx);
+    const item = await ctx.db.get(itemId);
 
+    if (!item || item.userId !== currentUser._id) {
+      return null;
+    }
+
+    return item;
+  },
+});
 export const countItemsByCategory = query({
   handler: async (ctx) => {
     // Get the authenticated user
@@ -101,8 +130,6 @@ export const countItemsByCategory = query({
     return counts;
   },
 });
-
-expo
 export const getPreviewImageByCategory = query({
   handler: async (ctx): Promise<
     { category: string; images: string[] }[]
@@ -130,5 +157,37 @@ export const getPreviewImageByCategory = query({
       category,
       images,
     }));
+  },
+});
+export const updateItem = mutation({
+  args: {
+    itemId: v.id("items"),
+    category: v.string(),
+    subcategory: v.string(),
+    style: v.array(v.string()),
+    color: v.optional(v.string()),
+    caption: v.string(),
+    brand: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    if (!user) throw new Error("Unauthorized");
+
+    // Find the item, ensure it belongs to the user
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Item not found");
+    if (item.userId !== user._id) throw new Error("Not authorized to update this item");
+
+    // Update item with new values
+    await ctx.db.patch(args.itemId, {
+      category: args.category,
+      subcategory: args.subcategory,
+      style: args.style,
+      color: args.color,
+      caption: args.caption,
+      brand: args.brand,
+    });
+
+    return true;
   },
 });

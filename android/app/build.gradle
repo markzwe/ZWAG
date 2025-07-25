@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.markzwe.AiOutfit'
+    namespace 'com.markzwe.ZWAG'
     defaultConfig {
-        applicationId 'com.markzwe.AiOutfit'
+        applicationId 'com.markzwe.ZWAG'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

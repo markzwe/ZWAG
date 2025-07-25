@@ -30,6 +30,7 @@ export default defineSchema({
       subcategory: v.string(), // e.g. “hoodie”, “jeans”
       style: v.array(v.string()), // e.g. ["casual", "formal"]
       color: v.optional(v.string()), // e.g. “black”, “navy”
+      brand: v.optional(v.string()), // e.g. "Nike", "Adidas"
       embedding: v.optional(v.array(v.float64())), // image vector
     })  
     .index("by_userId", ["userId"])
@@ -37,7 +38,9 @@ export default defineSchema({
     .index("by_userId_color", ["userId", "color"])
     .index("by_userId_embedding", ["userId", "embedding"])
     .index("by_userId_caption", ["userId", "caption"])
-    ,
+    .index("by_userId_subcategory", ["userId", "subcategory"])
+    .index("by_userId_style", ["userId", "style"])
+    .index("by_userId_brand", ["userId", "brand"]),
     
     // Outfits created by users & AI
     outfits: defineTable({

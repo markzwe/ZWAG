@@ -8,28 +8,28 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		1447D96727F717C491630EB3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0C24E047F32339F2DACDEA99 /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		497D124C459F6BDA219CC0ED /* libPods-AiOutfit.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BA512CAF19D667196527211C /* libPods-AiOutfit.a */; };
-		51398F9C23CC95E900876BAA /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FD13E21A13B9AD181588D41 /* ExpoModulesProvider.swift */; };
+		801B3BB9EB8059375CDAFA48 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B5243E14C270C713B07C33 /* ExpoModulesProvider.swift */; };
+		B309F8B63FC7F43A55129FB0 /* libPods-ZWAG.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EF5A920EC2664ED1D67EFAB2 /* libPods-ZWAG.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		C95DBE922722B059A52A230B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6576B1B17FBE6FAF62311ED1 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0700901374427C722D0A3051 /* Pods-AiOutfit.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AiOutfit.release.xcconfig"; path = "Target Support Files/Pods-AiOutfit/Pods-AiOutfit.release.xcconfig"; sourceTree = "<group>"; };
-		13B07F961A680F5B00A75B9A /* AiOutfit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AiOutfit.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = AiOutfit/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = AiOutfit/Info.plist; sourceTree = "<group>"; };
-		5FD13E21A13B9AD181588D41 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-AiOutfit/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		6576B1B17FBE6FAF62311ED1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = AiOutfit/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = AiOutfit/SplashScreen.storyboard; sourceTree = "<group>"; };
-		BA512CAF19D667196527211C /* libPods-AiOutfit.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AiOutfit.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C24E047F32339F2DACDEA99 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = ZWAG/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* ZWAG.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZWAG.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = ZWAG/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ZWAG/Info.plist; sourceTree = "<group>"; };
+		4E7EC7BFAAD4C1E72A0AFBB6 /* Pods-ZWAG.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZWAG.release.xcconfig"; path = "Target Support Files/Pods-ZWAG/Pods-ZWAG.release.xcconfig"; sourceTree = "<group>"; };
+		5A57CC42856F80AD50A72F0F /* Pods-ZWAG.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ZWAG.debug.xcconfig"; path = "Target Support Files/Pods-ZWAG/Pods-ZWAG.debug.xcconfig"; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = ZWAG/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		C1B5243E14C270C713B07C33 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-ZWAG/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = AiOutfit/AppDelegate.swift; sourceTree = "<group>"; };
-		F11748442D0722820044C1D9 /* AiOutfit-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "AiOutfit-Bridging-Header.h"; path = "AiOutfit/AiOutfit-Bridging-Header.h"; sourceTree = "<group>"; };
-		F92E100ED8EC25A4978228E0 /* Pods-AiOutfit.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AiOutfit.debug.xcconfig"; path = "Target Support Files/Pods-AiOutfit/Pods-AiOutfit.debug.xcconfig"; sourceTree = "<group>"; };
+		EF5A920EC2664ED1D67EFAB2 /* libPods-ZWAG.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ZWAG.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ZWAG/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* ZWAG-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "ZWAG-Bridging-Header.h"; path = "ZWAG/ZWAG-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,42 +37,60 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				497D124C459F6BDA219CC0ED /* libPods-AiOutfit.a in Frameworks */,
+				B309F8B63FC7F43A55129FB0 /* libPods-ZWAG.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* AiOutfit */ = {
+		0278C90A5C24FEC40DFFFE53 /* ZWAG */ = {
+			isa = PBXGroup;
+			children = (
+				C1B5243E14C270C713B07C33 /* ExpoModulesProvider.swift */,
+			);
+			name = ZWAG;
+			sourceTree = "<group>";
+		};
+		13B07FAE1A68108700A75B9A /* ZWAG */ = {
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
-				F11748442D0722820044C1D9 /* AiOutfit-Bridging-Header.h */,
+				F11748442D0722820044C1D9 /* ZWAG-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				6576B1B17FBE6FAF62311ED1 /* PrivacyInfo.xcprivacy */,
+				0C24E047F32339F2DACDEA99 /* PrivacyInfo.xcprivacy */,
 			);
-			name = AiOutfit;
+			name = ZWAG;
+			sourceTree = "<group>";
+		};
+		2B269805EE3A6FF73935CF54 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				0278C90A5C24FEC40DFFFE53 /* ZWAG */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				BA512CAF19D667196527211C /* libPods-AiOutfit.a */,
+				EF5A920EC2664ED1D67EFAB2 /* libPods-ZWAG.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3DC15E950786BDE841673D97 /* ExpoModulesProviders */ = {
+		5EE6DAA4A398E46B913466C5 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				8C70820F05353EE1FB434CC7 /* AiOutfit */,
+				5A57CC42856F80AD50A72F0F /* Pods-ZWAG.debug.xcconfig */,
+				4E7EC7BFAAD4C1E72A0AFBB6 /* Pods-ZWAG.release.xcconfig */,
 			);
-			name = ExpoModulesProviders;
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -85,12 +103,12 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				13B07FAE1A68108700A75B9A /* AiOutfit */,
+				13B07FAE1A68108700A75B9A /* ZWAG */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				C393AC61EA21C166776CD78A /* Pods */,
-				3DC15E950786BDE841673D97 /* ExpoModulesProviders */,
+				5EE6DAA4A398E46B913466C5 /* Pods */,
+				2B269805EE3A6FF73935CF54 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -100,17 +118,9 @@
 		83CBBA001A601CBA00E9B192 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				13B07F961A680F5B00A75B9A /* AiOutfit.app */,
+				13B07F961A680F5B00A75B9A /* ZWAG.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		8C70820F05353EE1FB434CC7 /* AiOutfit */ = {
-			isa = PBXGroup;
-			children = (
-				5FD13E21A13B9AD181588D41 /* ExpoModulesProvider.swift */,
-			);
-			name = AiOutfit;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -119,42 +129,32 @@
 				BB2F792C24A3F905000567C9 /* Expo.plist */,
 			);
 			name = Supporting;
-			path = AiOutfit/Supporting;
-			sourceTree = "<group>";
-		};
-		C393AC61EA21C166776CD78A /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				F92E100ED8EC25A4978228E0 /* Pods-AiOutfit.debug.xcconfig */,
-				0700901374427C722D0A3051 /* Pods-AiOutfit.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
+			path = ZWAG/Supporting;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* AiOutfit */ = {
+		13B07F861A680F5B00A75B9A /* ZWAG */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "AiOutfit" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "ZWAG" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				1FC350886374E930640FE75E /* [Expo] Configure project */,
+				AEF66F4686AE734A35230189 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				A4F4E49C897743F5FD015C15 /* [CP] Embed Pods Frameworks */,
+				BB63DF56C343A716DCA4690C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = AiOutfit;
-			productName = AiOutfit;
-			productReference = 13B07F961A680F5B00A75B9A /* AiOutfit.app */;
+			name = ZWAG;
+			productName = ZWAG;
+			productReference = 13B07F961A680F5B00A75B9A /* ZWAG.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -170,7 +170,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "AiOutfit" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "ZWAG" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -183,7 +183,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* AiOutfit */,
+				13B07F861A680F5B00A75B9A /* ZWAG */,
 			);
 		};
 /* End PBXProject section */
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				C95DBE922722B059A52A230B /* PrivacyInfo.xcprivacy in Resources */,
+				1447D96727F717C491630EB3 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -233,31 +233,12 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-AiOutfit-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-ZWAG-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
-		};
-		1FC350886374E930640FE75E /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-AiOutfit/expo-configure-project.sh\"\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -265,7 +246,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-AiOutfit/Pods-AiOutfit-resources.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-ZWAG/Pods-ZWAG-resources.sh",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXApplication/ExpoApplication_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
@@ -332,16 +313,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AiOutfit/Pods-AiOutfit-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ZWAG/Pods-ZWAG-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		A4F4E49C897743F5FD015C15 /* [CP] Embed Pods Frameworks */ = {
+		AEF66F4686AE734A35230189 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-ZWAG/expo-configure-project.sh\"\n";
+		};
+		BB63DF56C343A716DCA4690C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-AiOutfit/Pods-AiOutfit-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-ZWAG/Pods-ZWAG-frameworks.sh",
 				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
 			);
 			name = "[CP] Embed Pods Frameworks";
@@ -350,7 +350,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AiOutfit/Pods-AiOutfit-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ZWAG/Pods-ZWAG-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -361,7 +361,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				51398F9C23CC95E900876BAA /* ExpoModulesProvider.swift in Sources */,
+				801B3BB9EB8059375CDAFA48 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -370,18 +370,18 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F92E100ED8EC25A4978228E0 /* Pods-AiOutfit.debug.xcconfig */;
+			baseConfigurationReference = 5A57CC42856F80AD50A72F0F /* Pods-ZWAG.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = AiOutfit/AiOutfit.entitlements;
+				CODE_SIGN_ENTITLEMENTS = ZWAG/ZWAG.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
 				);
-				INFOPLIST_FILE = AiOutfit/Info.plist;
+				INFOPLIST_FILE = ZWAG/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -394,9 +394,9 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mark-zwe.AiOutfit";
-				PRODUCT_NAME = AiOutfit;
-				SWIFT_OBJC_BRIDGING_HEADER = "AiOutfit/AiOutfit-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mark-zwe.ZWAG";
+				PRODUCT_NAME = ZWAG;
+				SWIFT_OBJC_BRIDGING_HEADER = "ZWAG/ZWAG-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -406,13 +406,13 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0700901374427C722D0A3051 /* Pods-AiOutfit.release.xcconfig */;
+			baseConfigurationReference = 4E7EC7BFAAD4C1E72A0AFBB6 /* Pods-ZWAG.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = AiOutfit/AiOutfit.entitlements;
+				CODE_SIGN_ENTITLEMENTS = ZWAG/ZWAG.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = AiOutfit/Info.plist;
+				INFOPLIST_FILE = ZWAG/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -425,9 +425,9 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mark-zwe.AiOutfit";
-				PRODUCT_NAME = AiOutfit;
-				SWIFT_OBJC_BRIDGING_HEADER = "AiOutfit/AiOutfit-Bridging-Header.h";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mark-zwe.ZWAG";
+				PRODUCT_NAME = ZWAG;
+				SWIFT_OBJC_BRIDGING_HEADER = "ZWAG/ZWAG-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -561,7 +561,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "AiOutfit" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "ZWAG" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				13B07F941A680F5B00A75B9A /* Debug */,
@@ -570,7 +570,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "AiOutfit" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "ZWAG" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,

@@ -1,24 +1,24 @@
 {
   "expo": {
-    "name": "AiOutfit",
-    "slug": "AiOutfit",
+    "name": "ZWAG",
+    "slug": "ZWAG",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "aioutfit",
-    "userInterfaceStyle": "automatic",
+    "scheme": "zwag",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mark-zwe.AiOutfit"
+      "bundleIdentifier": "com.mark-zwe.ZWAG"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#272B2C"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.markzwe.AiOutfit"
+      "package": "com.markzwe.ZWAG"
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +33,8 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#272B2C",
+          "userInterfaceStyle": "dark"
         }
       ]
     ],

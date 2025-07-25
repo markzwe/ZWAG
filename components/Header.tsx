@@ -16,10 +16,12 @@ export default function Header() {
       {/* Logo Section */}
       <View style={styles.logoSection}>
         <Image
-          source={require("@/assets/images/react-logo.png")}
+          source={require("@/assets/images/ZWAG-header.png")}
           style={styles.logoImage}
+          contentFit="cover"
+
         />
-        <Text style={styles.appTitle}>Mantire</Text>
+        {/* <Text style={styles.appTitle}>Mantire</Text> */}
       </View>
 
       {/* Menu Button */}
@@ -36,6 +38,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.sm,
     backgroundColor: COLORS.primaryBackground,
     ...SHADOWS.sm,
   },
@@ -45,8 +48,8 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
   },
   logoImage: {
-    width: 32,
-    height: 32,
+    width:70,
+    height: 35,
   },
   appTitle: {
     fontSize: 20,
