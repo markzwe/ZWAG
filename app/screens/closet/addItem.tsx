@@ -90,7 +90,7 @@ export default function AddItem() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="chevron-back" size={24} color={COLORS.pureWhite} />
           </TouchableOpacity>
           <Text style={styles.screenHeaderTitle}>Add Item To Your Closet</Text>
           <View style={styles.headerRightSpacer} />
@@ -196,7 +196,7 @@ export default function AddItem() {
           style={styles.primaryActionButton}
           onPress={() =>
             router.push({
-              pathname: "/screens/visionKitRemoval",
+              pathname: "/screens/closet/visionKitRemoval",
               params: { imageUri: selectedImage },
             })
           }
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.pureWhite,
+    backgroundColor: COLORS.darkGray,
     alignItems: "center",
     justifyContent: "center",
     ...SHADOWS.sm,

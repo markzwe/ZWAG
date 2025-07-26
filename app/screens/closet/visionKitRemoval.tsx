@@ -115,7 +115,7 @@ export default function VisionKitRemoval() {
           style={styles.primaryActionButton}
           onPress={() =>
             router.push({
-              pathname: "/screens/addedItem",
+              pathname: "/screens/closet/addedItem",
               params: { processedImageUri: imageUri }, // Pass the original image URI for testing
             })
           }

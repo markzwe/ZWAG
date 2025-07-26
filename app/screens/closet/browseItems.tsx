@@ -64,7 +64,9 @@ const BrowseHeader: React.FC<BrowseHeaderProps> = ({
           <Ionicons
             name={Platform.OS === "ios" ? "chevron-back" : "arrow-back"}
             size={22}
-            color={COLORS.darkGray}
+            color={COLORS.pureWhite
+              
+            }
           />
         </TouchableOpacity>
 
@@ -201,7 +203,7 @@ export default function BrowseItems() {
     // Do something, e.g. navigate or show details
     console.log("Pressed card:", item, "at index:", index);
     router.push({
-      pathname: "/screens/itemViewDetail",
+      pathname: "/screens/closet/itemViewDetail",
       params: {
         itemId: item._id,      },
     });
@@ -307,7 +309,7 @@ const styles = StyleSheet.create({
     height: 38,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.pureWhite,
+    backgroundColor: COLORS.darkGray,
     borderRadius: 19,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

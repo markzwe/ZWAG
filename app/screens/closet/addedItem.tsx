@@ -101,7 +101,7 @@ export default function AddedItem() {
           style={styles.backButton}
           onPress={() => router.push("/(tabs)",)}
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.offWhite} />
         </TouchableOpacity>
         <Text style={styles.title}>Add Item</Text>
         <View style={styles.placeholder} />
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.pureWhite,
+    backgroundColor: COLORS.darkGray,
     justifyContent: "center",
     alignItems: "center",
     ...SHADOWS.sm,

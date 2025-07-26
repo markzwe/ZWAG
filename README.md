@@ -15,7 +15,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```bash
    npx expo start
    ```
-# Outfit/FashionAI — AI-Powered Personal Stylist App
+# ZWAG — AI-Powered Personal Stylist App
 
 **Founder:** Zwe Htet  
 **Co-founder:** TBD
@@ -24,7 +24,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Project Overview
 
-Outfit/FashionAI is an iOS-first mobile app designed to help users dress better by leveraging AI-powered outfit suggestions tailored to their personal wardrobe. Users upload photos of their clothing items, which are processed to create a digital wardrobe. The AI analyzes the wardrobe and recommends stylish, personalized outfit combinations based on occasion, mood, and fashion trends.
+ZWAG is an iOS-first mobile app designed to help users dress better by leveraging AI-powered outfit suggestions tailored to their personal wardrobe. Users upload photos of their clothing items, which are processed to create a digital wardrobe. The AI analyzes the wardrobe and recommends stylish, personalized outfit combinations based on occasion, mood, and fashion trends.
 
 ---
 
@@ -92,11 +92,6 @@ Instructions for setting up the development environment, installing dependencies
 ## License
 
 MIT License
-
----
-
-Feel free to open issues or contribute!
-
 ---
 
 *Developed by Zwe Htet*

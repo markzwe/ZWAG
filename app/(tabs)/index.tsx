@@ -99,7 +99,7 @@ export default function Closet() {
         // Navigate to category screen
         console.log(`Navigate to ${category.name}`);
         router.push({
-          pathname: "/screens/browseItems",
+          pathname: "/screens/closet/browseItems",
           params: { categoryName: category.name },
         });
       }}
@@ -124,7 +124,7 @@ export default function Closet() {
   );
 
   const broweByCategories = () => {
-    router.push("/screens/browseItems");
+    router.push("/screens/closet/browseItems");
   };
 
   return (
@@ -138,7 +138,7 @@ export default function Closet() {
           </Text>
           <TouchableOpacity
             style={styles.emptyAddButton}
-            onPress={() => router.push("/screens/addItem")}
+            onPress={() => router.push("/screens/closet/addItem")}
           >
             <Ionicons name="add" size={24} color={COLORS.pureWhite} />
             <Text style={styles.emptyAddButtonText}>Add Item</Text>
@@ -157,7 +157,7 @@ export default function Closet() {
             {categories.length > 0 && (
               <TouchableOpacity
                 style={styles.createButton}
-                onPress={() => router.push("/screens/addItem")}
+                onPress={() => router.push("/screens/closet/addItem")}
               >
                 <Ionicons
                   name="add"
@@ -178,7 +178,7 @@ export default function Closet() {
             {/* Browse All Section */}
             <TouchableOpacity
               style={styles.browseAllCard}
-              onPress={() => router.push("/screens/browseItems")}
+              onPress={() => router.push("/screens/closet/browseItems")}
             >
               <View style={styles.browseAllContent}>
                 <View style={styles.browseAllLeft}>

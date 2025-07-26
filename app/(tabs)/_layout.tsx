@@ -1,27 +1,27 @@
+import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
+import { View } from "react-native";
 import { COLORS } from "../../constants/theme";
-import { View, Text } from "react-native";
-import { useAuth } from "@clerk/clerk-expo";
 
 export default function TabLayout() {
   const { isSignedIn } = useAuth();
-  if (!isSignedIn)
-    return <Redirect href={"/onBordingScreens/welcome"} />;
+  if (!isSignedIn) return <Redirect href={"/onBordingScreens/welcome"} />;
   return (
     <Tabs
       screenOptions={{
         tabBarShowLabel: false,
         headerShown: false,
+        
         tabBarStyle: {
           backgroundColor: COLORS.pureWhite,
           borderTopColor: COLORS.pureWhite,
           elevation: 1,
           height: 70,
         },
-        tabBarPosition: 'bottom',
+        tabBarPosition: "bottom",
         tabBarActiveTintColor: COLORS.pureWhite,
-        tabBarInactiveTintColor: COLORS.lightGray,
+        tabBarInactiveTintColor: COLORS.mediumGray,
       }}
     >
       <Tabs.Screen
@@ -32,6 +32,25 @@ export default function TabLayout() {
               <View style={{ alignItems: "center", justifyContent: "center" }}>
                 <MaterialCommunityIcons
                   name={focused ? "wardrobe" : "wardrobe-outline"}
+                  size={27}
+                  color={focused ? COLORS.black : COLORS.mediumGray}
+                />
+              </View>
+            );
+          },
+          headerBackgroundContainerStyle: {
+          backgroundColor: COLORS.darkGray,
+          },
+        }}
+      />
+      <Tabs.Screen
+        name="recents"
+        options={{
+          tabBarIcon: ({ size, color, focused }) => {
+            return (
+              <View style={{ alignItems: "center", justifyContent: "center" }}>
+                <Ionicons
+                  name={focused ? "refresh" : "refresh-outline"}
                   size={27}
                   color={focused ? COLORS.black : COLORS.mediumGray}
                 />
@@ -53,7 +72,7 @@ export default function TabLayout() {
                   width: 70,
                   height: 70,
                   borderRadius: 35,
-                  backgroundColor: COLORS.offWhite,
+                  backgroundColor: COLORS.darkGray,
                   alignItems: "center",
                   justifyContent: "center",
                   marginTop: -20,
@@ -67,7 +86,7 @@ export default function TabLayout() {
                 <Ionicons
                   name={focused ? "sparkles" : "sparkles-outline"}
                   size={40}
-                  color={COLORS.black}
+                  color={COLORS.pureWhite}
                 />
               </View>
             );

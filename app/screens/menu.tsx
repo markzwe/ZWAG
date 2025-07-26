@@ -107,12 +107,6 @@ export default function Menu() {
       title: "Prefrences",
       items: [
         {
-          icon: "shirt-outline" as const,
-          title: "My Items",
-          subtitle: "View and manage your clothing",
-          onPress: () => router.push("/(tabs)"),
-        },
-        {
           icon: "color-palette-outline" as const,
           title: "Style Preferences",
           subtitle: "Customize your fashion style",
@@ -158,8 +152,7 @@ export default function Menu() {
   ];
 
   return (
-    <>
-      <View style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea}>
         <Animated.View
           style={[
             styles.container,
@@ -225,8 +218,8 @@ export default function Menu() {
             />
           </View>
         </Animated.View>
-      </View>
-    </>
+        <Text > Made With ❤️ </Text>
+      </SafeAreaView>
   );
 }
 
@@ -238,12 +231,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.primaryBackground,
-    paddingTop: 50, // Adjusted for header height
   },
 
   header: {
     flexDirection: "row",
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.sm,
   },
   backButton: {
     width: 40,
