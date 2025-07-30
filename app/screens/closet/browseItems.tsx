@@ -1,4 +1,5 @@
 import ItemsPreview from "@/components/ItemPreviewCard";
+import ItemsPreviewCardGenerate from "@/components/ItemPreviewCardGenerate";
 import { BORDER_RADIUS, COLORS, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import FilterOptionsModal from "@/modals/FilterOptionsModal";
@@ -17,10 +18,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-type BrowseItemsCategoryProps = {
-  catagoryName: string;
-};
 
 type BrowseHeaderProps = {
   catagoryName: string;
@@ -64,9 +61,7 @@ const BrowseHeader: React.FC<BrowseHeaderProps> = ({
           <Ionicons
             name={Platform.OS === "ios" ? "chevron-back" : "arrow-back"}
             size={22}
-            color={COLORS.pureWhite
-              
-            }
+            color={COLORS.pureWhite}
           />
         </TouchableOpacity>
 
@@ -133,9 +128,8 @@ const BrowseHeader: React.FC<BrowseHeaderProps> = ({
                   selectedFilter && styles.filterTextActive,
                 ]}
               >
-                 Filter
+                Filter
               </Text>
-         
             </TouchableOpacity>
           )}
 
@@ -160,6 +154,9 @@ export default function BrowseItems() {
   const insets = useSafeAreaInsets();
   // get the selected category from the router params
   const { categoryName } = useLocalSearchParams() as { categoryName: string };
+  const { chooseFromGenerate } = useLocalSearchParams() as {
+    chooseFromGenerate?: boolean;
+  };
   console.log("Selected category:", categoryName);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,6 +167,8 @@ export default function BrowseItems() {
   );
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
+  // Track selected item ids for generate mode (multi-select)
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Setup dynamic query args
   const itemQueryArgs: Record<string, any> = {};
@@ -185,6 +184,16 @@ export default function BrowseItems() {
 
   const handleOpenFilter = () => {
     setFilterVisible(true);
+  };
+
+  // Handle passing selected items to the next screen if in generate mode
+  const handlePassChosenItems = () => {
+    router.push({
+      pathname: "/screens/generateOutfit/askPrefrencedItem",
+      params: {
+        selectedIds: selectedIds,
+      },
+    });
   };
 
   // Accept array of filters from modal
@@ -205,7 +214,8 @@ export default function BrowseItems() {
     router.push({
       pathname: "/screens/closet/itemViewDetail",
       params: {
-        itemId: item._id,      },
+        itemId: item._id,
+      },
     });
   };
   const clearSearch = () => {
@@ -245,21 +255,85 @@ export default function BrowseItems() {
         showsVerticalScrollIndicator={false}
         numColumns={2}
         columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: chooseFromGenerate ? 120 : 20 }
+        ]}
         bounces={false}
-        renderItem={({ item, index }) => (
-          <ItemsPreview
-            imageUri={item.imageUrl}
-            itemCaption={item.caption}
-            category={item.category}
-            subcategory={item.subcategory}
-            onPress={() => {
-              console.log("Pressed card:", item, "at index:", index);
-              handleCardPress(item, index);
-            }}
-          />
-        )}
+        renderItem={({ item, index }) =>
+          chooseFromGenerate ? (
+            <ItemsPreviewCardGenerate
+              imageUri={item.imageUrl}
+              itemCaption={item.caption}
+              category={item.category}
+              subcategory={item.subcategory}
+              onPress={() => {
+                console.log("Pressed card:", item, "at index:", index);
+                setSelectedIds((prev) =>
+                  prev.includes(item._id)
+                    ? prev.filter((id) => id !== item._id)
+                    : [...prev, item._id]
+                );
+              }}
+              selected={selectedIds.includes(item._id)}
+            />
+          ) : (
+            <ItemsPreview
+              imageUri={item.imageUrl}
+              itemCaption={item.caption}
+              category={item.category}
+              subcategory={item.subcategory}
+              onPress={() => {
+                console.log("Pressed card:", item, "at index:", index);
+                handleCardPress(item, index);
+              }}
+            />
+          )
+        }
       />
+      {/* Enhanced Sticky Footer */}
+      {chooseFromGenerate && (
+        <View
+          style={[styles.stickyFooter, { paddingBottom: insets.bottom + 20 }]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.footerButton,
+              selectedIds.length === 0 && styles.footerButtonDisabled
+            ]}
+            activeOpacity={0.9}
+            disabled={selectedIds.length === 0}
+            onPress={handlePassChosenItems}
+          >
+            <BlurView
+              intensity={40}
+              tint="systemMaterialDark"
+              style={styles.footerPill}
+            >
+              <View style={styles.footerContent}>
+                <Text style={[
+                  styles.footerPillText,
+                  selectedIds.length === 0 && styles.footerTextDisabled
+                ]}>
+                  {selectedIds.length === 0
+                    ? "Select items to continue"
+                    : `Continue with ${selectedIds.length}`}
+                </Text>
+                {selectedIds.length > 0 && (
+                  <View style={styles.continueIcon}>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={18}
+                      color={COLORS.pureWhite}
+                    />
+                  </View>
+                )}
+              </View>
+            </BlurView>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Filter Options Modal */}
       <FilterOptionsModal
         visible={filterVisible}
@@ -272,6 +346,77 @@ export default function BrowseItems() {
 }
 
 const styles = StyleSheet.create({
+  // Enhanced Footer Styles Only
+  stickyFooter: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+
+  footerButton: {
+    width: "100%",
+    maxWidth: 280,
+  },
+
+  footerButtonDisabled: {
+    opacity: 0.6,
+  },
+
+  footerPill: {
+    overflow: "hidden",
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 0.5,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+
+  footerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  footerPillText: {
+    fontSize: 16,
+    color: COLORS.pureWhite,
+    fontWeight: "600",
+    letterSpacing: 0.1,
+    flex: 1,
+  },
+
+  footerTextDisabled: {
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+
+  continueIcon: {
+    backgroundColor: COLORS.blue,
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+    shadowColor: COLORS.blue,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+
+  // All your existing styles remain unchanged below
   headerOuter: {
     paddingHorizontal: 8,
     backgroundColor: "rgba(73, 73, 73, 0.23)",

@@ -1,18 +1,19 @@
 import { COLORS, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -64,39 +65,54 @@ export default function ItemViewDetail() {
   };
 
   return (
-    <ScrollView style={[styles.container, { paddingTop: insets.top }]}>
-      <Image
-        source={{ uri: item.imageUrl }}
-        style={styles.image}
-        contentFit="contain"
-      />
-      <Text style={styles.label}>Category</Text>
-      <TextInput style={styles.input} value={category} onChangeText={setCategory} />
-
-      <Text style={styles.label}>Subcategory</Text>
-      <TextInput
-        style={styles.input}
-        value={subcategory}
-        onChangeText={setSubcategory}
-      />
-
-      <Text style={styles.label}>Style (comma separated)</Text>
-      <TextInput
-        style={styles.input}
-        value={style.join(", ")}
-        onChangeText={(text) => setStyle(text.split(",").map((s) => s.trim()))}
-      />
-
-      <Text style={styles.label}>Color</Text>
-      <TextInput style={styles.input} value={color} onChangeText={setColor} />
-
-      <Text style={styles.label}>Caption</Text>
-      <TextInput style={styles.input} value={caption} onChangeText={setCaption} />
-
-      <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Save Changes</Text>
+    <>
+      <ScrollView style={[styles.container, { paddingTop: insets.top }]}>
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Ionicons name="chevron-back" size={24} color={COLORS.offWhite} />
       </TouchableOpacity>
-    </ScrollView>
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.image}
+          contentFit="contain"
+        />
+        <Text style={styles.label}>Category</Text>
+        <TextInput
+          style={styles.input}
+          value={category}
+          onChangeText={setCategory}
+        />
+
+        <Text style={styles.label}>Subcategory</Text>
+        <TextInput
+          style={styles.input}
+          value={subcategory}
+          onChangeText={setSubcategory}
+        />
+
+        <Text style={styles.label}>Style (comma separated)</Text>
+        <TextInput
+          style={styles.input}
+          value={style.join(", ")}
+          onChangeText={(text) =>
+            setStyle(text.split(",").map((s) => s.trim()))
+          }
+        />
+
+        <Text style={styles.label}>Color</Text>
+        <TextInput style={styles.input} value={color} onChangeText={setColor} />
+
+        <Text style={styles.label}>Caption</Text>
+        <TextInput
+          style={styles.input}
+          value={caption}
+          onChangeText={setCaption}
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleSave}>
+          <Text style={styles.buttonText}>Save Changes</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </>
   );
 }
 
@@ -129,6 +145,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     marginTop: 20,
+  },
+  backButton: {
+    width: 40,
+    backgroundColor: COLORS.darkGray,
+    borderRadius: 32,
+    padding: 8,
   },
   buttonText: {
     color: "white",

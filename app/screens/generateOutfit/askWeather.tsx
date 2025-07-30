@@ -14,12 +14,13 @@ const weather = [
 
 export default function AskWeather() {
   const { occasion } = useLocalSearchParams();
+  console.log("Selected Occasion in askWeather :", occasion);
   const [selectedWeather, setSelectedWeather] = useState("");
 
   const handleContinue = () => {
     if (selectedWeather) {
       router.push({
-        pathname: "/screens/generateOutfit/savedSettings",
+        pathname: "/screens/generateOutfit/askPrefrencedItem",
         params: { occasion, weather: selectedWeather },
       });
     } else {

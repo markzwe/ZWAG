@@ -14,7 +14,6 @@ type ItemsPreviewProps = {
 
 export default function ItemsPreviewCard({
   imageUri,
-  itemCaption,
   category,
   subcategory,
   onPress,
