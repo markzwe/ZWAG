@@ -214,6 +214,7 @@ export default function FilterOptionsModal({
   return (
     <Modal
       transparent={false}
+      animationType="slide"
       visible={visible}
       presentationStyle="pageSheet"
       onRequestClose={onClose}

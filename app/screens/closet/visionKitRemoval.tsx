@@ -21,76 +21,76 @@ export default function VisionKitRemoval() {
   const [loading, setLoading] = useState<boolean>(true);
   const [isReadyContinue, setIsReadyContinue] = useState<boolean>(false); // State to control readiness for navigation
 
-  // useEffect(() => {
-  //   if (!imageUri) {
-  //     setError("No image provided");
-  //     setLoading(false);
-  //     return;
-  //   }
+  useEffect(() => {
+    if (!imageUri) {
+      setError("No image provided");
+      setLoading(false);
+      return;
+    }
 
-  //   const processImage = async () => {
-  //     try {
-  //       const resultUri = await removeBg(imageUri);
-  //       setBackgroundRemovedImageURI(resultUri as string);
-  //     } catch (err) {
-  //       setError(err instanceof Error ? err.message : String(err));
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+    const processImage = async () => {
+      try {
+        const resultUri = await removeBg(imageUri);
+        setBackgroundRemovedImageURI(resultUri as string);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  //   processImage();
-  // }, [imageUri]);
+    processImage();
+  }, [imageUri]);
 
-  // async function removeBg(imageUri: string) {
-  //   const apiKey = "7C5HUh99oUAkaN9j9dp8kbeY";
+  async function removeBg(imageUri: string) {
+    const apiKey = "7C5HUh99oUAkaN9j9dp8kbeY";
 
-  //   const formData = new FormData();
-  //   formData.append("size", "preview");
-  //   formData.append("crop", "true");
-  //   formData.append("image_file", {
-  //     uri: imageUri,
-  //     name: "image.jpg",
-  //     type: "image/jpeg",
-  //   });
+    const formData = new FormData();
+    formData.append("size", "preview");
+    formData.append("crop", "true");
+    formData.append("image_file", {
+      uri: imageUri,
+      name: "image.jpg",
+      type: "image/jpeg",
+    });
 
-  //   const response = await fetch("https://api.remove.bg/v1.0/removebg", {
-  //     method: "POST",
-  //     headers: {
-  //       "X-Api-Key": apiKey,
-  //     },
-  //     body: formData,
-  //   });
+    const response = await fetch("https://api.remove.bg/v1.0/removebg", {
+      method: "POST",
+      headers: {
+        "X-Api-Key": apiKey,
+      },
+      body: formData,
+    });
 
-  //   if (!response.ok) {
-  //     const errorText = await response.text();
-  //     throw new Error(`Remove.bg failed: ${response.status} ${errorText}`);
-  //   }
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Remove.bg failed: ${response.status} ${errorText}`);
+    }
 
-  //   const blob = await response.blob();
-  //   const reader = new FileReader();
+    const blob = await response.blob();
+    const reader = new FileReader();
 
-  //   return new Promise<string>((resolve, reject) => {
-  //     reader.onloadend = async () => {
-  //       try {
-  //         const base64Data = reader.result!.toString().split(",")[1];
-  //         const uniqueFileName = `no-bg-${Date.now()}.png`;
-  //         const fileUri = FileSystem.documentDirectory + uniqueFileName;
-  //         await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-  //           encoding: FileSystem.EncodingType.Base64,
-  //         });
-  //         resolve(fileUri);
-  //       } catch (error) {
-  //         reject(error);
-  //       } finally {
-  //         setIsReadyContinue(true);
-  //       }
-  //     };
+    return new Promise<string>((resolve, reject) => {
+      reader.onloadend = async () => {
+        try {
+          const base64Data = reader.result!.toString().split(",")[1];
+          const uniqueFileName = `no-bg-${Date.now()}.png`;
+          const fileUri = FileSystem.documentDirectory + uniqueFileName;
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          resolve(fileUri);
+        } catch (error) {
+          reject(error);
+        } finally {
+          setIsReadyContinue(true);
+        }
+      };
 
-  //     reader.onerror = reject;
-  //     reader.readAsDataURL(blob);
-  //   });
-  // }
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
   console.log(
     "Processed Image URI removed BG in visionKitRemoval:",
     backgroundRemovedImageURI
@@ -104,7 +104,7 @@ export default function VisionKitRemoval() {
       {error && <Text style={styles.errorText}>{error}</Text>}
       {backgroundRemovedImageURI && (
         <Image
-          source={{ uri: imageUri }} //Replace with the processed image URI
+          source={{ uri: backgroundRemovedImageURI }} //Replace with the processed image URI
           style={styles.visionKitView}
           resizeMode="contain"
         />

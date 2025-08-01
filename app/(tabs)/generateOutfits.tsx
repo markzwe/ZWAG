@@ -36,7 +36,7 @@ export default function GenerateOutfits() {
   return (
     <View>
       <Redirect
-       href='/screens/generateOutfit/askCreateOptions'
+       href='/screens/generateOutfit/askOccasion'
         />
     </View>
   )

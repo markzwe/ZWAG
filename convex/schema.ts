@@ -44,11 +44,14 @@ export default defineSchema({
     
     // Outfits created by users & AI
     outfits: defineTable({
-      userId: v.id("users"),
-      imageUrl: v.array(v.string()), // array of image URLs for the outfit
-      description: v.optional(v.string()),
-      items: v.array(v.id("items")),
+      userId: v.id("users"),  
+        top: v.id("items"),
+        bottom: v.id("items"),
+        shoes: v.optional(v.id("items")),
+        outerwear: v.optional(v.id("items")),
+        accessories: v.optional(v.array(v.id("items"))),
+        fullBody: v.optional(v.id("items")),
+      
   })
   .index("byUser", ["userId"])
-  
 });

@@ -58,6 +58,7 @@ export default function AddedItem() {
 
   const saveToWardrobe = async () => {
     if (!processedImageUri) return;
+    console.log('styleOptions:', styleOptions);
     try {
       const uploadUrl = await generatedUploadUrl();
       const uploadResult = await FileSystem.uploadAsync(
@@ -78,7 +79,7 @@ export default function AddedItem() {
         caption,
         category,
         subcategory, // Use the selected subcategory
-        style: styleOptions, // Use the selected styles
+        style,
         color,
       });
       router.push("/(tabs)");
@@ -119,7 +120,7 @@ export default function AddedItem() {
               <Image
                 source={{ uri: processedImageUri }}
                 style={styles.image}
-                contentFit="fill"
+                contentFit="contain"
               />
             ) : (
               <View style={styles.imagePlaceholder}>

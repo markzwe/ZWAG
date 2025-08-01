@@ -21,7 +21,6 @@ export const analyzeOutfit = action({
   },
   handler: async (ctx, { items, occasion, weather, preferredItemsId }): Promise<string | null> => {
     // Get items by calling the query from the items module
-    
     // Filter preferred items if specified
     const filteredItems = preferredItemsId.length > 0 
       ? items.filter(item => preferredItemsId.includes(item._id))

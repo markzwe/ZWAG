@@ -261,23 +261,7 @@ export default function BrowseItems() {
         ]}
         bounces={false}
         renderItem={({ item, index }) =>
-          chooseFromGenerate ? (
-            <ItemsPreviewCardGenerate
-              imageUri={item.imageUrl}
-              itemCaption={item.caption}
-              category={item.category}
-              subcategory={item.subcategory}
-              onPress={() => {
-                console.log("Pressed card:", item, "at index:", index);
-                setSelectedIds((prev) =>
-                  prev.includes(item._id)
-                    ? prev.filter((id) => id !== item._id)
-                    : [...prev, item._id]
-                );
-              }}
-              selected={selectedIds.includes(item._id)}
-            />
-          ) : (
+          (
             <ItemsPreview
               imageUri={item.imageUrl}
               itemCaption={item.caption}

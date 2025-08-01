@@ -1,25 +1,26 @@
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
+  BORDER_RADIUS,
+  COLORS,
+  FONT_SIZES,
+  SHADOWS,
+  SPACING,
+} from "@/constants/theme";
+import { useAuth, useUser } from "@clerk/clerk-expo";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router } from "expo-router";
+import React, { useEffect, useRef } from "react";
+import {
   Alert,
   Animated,
   Dimensions,
+  Linking,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import React, { useRef, useEffect } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { router, Stack } from "expo-router";
-import {
-  COLORS,
-  SPACING,
-  SHADOWS,
-  FONT_SIZES,
-  BORDER_RADIUS,
-} from "@/constants/theme";
-import { useAuth, useUser } from "@clerk/clerk-expo";
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -141,85 +142,112 @@ export default function Menu() {
           subtitle: "Get help and contact support",
           onPress: () => console.log("Help pressed"),
         },
-        {
-          icon: "information-circle-outline" as const,
-          title: "About",
-          subtitle: "App version and information",
-          onPress: () => console.log("About pressed"),
-        },
       ],
     },
   ];
 
   return (
-      <SafeAreaView style={styles.safeArea}>
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateX: slideAnim }],
-            },
-          ]}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="close"
-                size={24}
-                color={COLORS.textPrimary}
-              />
-            </TouchableOpacity>
-          </View>
+    <SafeAreaView style={styles.safeArea}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        </View>
 
-          {/* User Profile Section */}
-          <View style={styles.profileSection}>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileEmail}>
-                {user?.primaryEmailAddress?.emailAddress || "Not signed in"}
-              </Text>
+        {/* User Profile Section */}
+        <View style={styles.profileSection}>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileEmail}>
+              {user?.primaryEmailAddress?.emailAddress || "Not signed in"}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.editProfileButton}>
+            <Ionicons name="pencil" size={20} color={COLORS.textPrimary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Menu Sections */}
+        {menuSections.map((section, sectionIndex) => (
+          <View key={sectionIndex} style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <View style={styles.sectionContent}>
+              {section.items.map((item, itemIndex) => (
+                <MenuItem
+                  key={itemIndex}
+                  icon={item.icon}
+                  title={item.title}
+                  subtitle={item.subtitle}
+                  onPress={item.onPress}
+                />
+              ))}
             </View>
-            <TouchableOpacity style={styles.editProfileButton}>
-              <Ionicons name="pencil" size={20} color={COLORS.textPrimary} />
-            </TouchableOpacity>
           </View>
+        ))}
 
-          {/* Menu Sections */}
-          {menuSections.map((section, sectionIndex) => (
-            <View key={sectionIndex} style={styles.menuSection}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
-              <View style={styles.sectionContent}>
-                {section.items.map((item, itemIndex) => (
-                  <MenuItem
-                    key={itemIndex}
-                    icon={item.icon}
-                    title={item.title}
-                    subtitle={item.subtitle}
-                    onPress={item.onPress}
-                  />
-                ))}
-              </View>
-            </View>
-          ))}
+        {/* Sign Out Button */}
+        <View style={styles.signOutSection}>
+          <MenuItem
+            icon="log-out-outline"
+            title="Sign Out"
+            onPress={handleSignOut}
+            showArrow={false}
+            danger={true}
+          />
+        </View>
+      <View style = {{
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: COLORS.primaryBackground,
+        borderTopColor: COLORS.divider,
+        gap: SPACING.sm-3,
+        }}>
+        
+        <Image
+          source={require("@/assets/images/ZWAG.png")}
+          style={{ width: 40, height: 40, borderRadius: 8, opacity: 0.9 }}
+          contentFit="contain"
+          
+        />
+        <Text style = {{color: COLORS.darkGray}}> Version: 1.0.0</Text>
+        <View style={{ flexDirection: "row", gap: SPACING.md }}>
+        <Ionicons
+          name="logo-instagram"
+          size={24}
+          color={COLORS.textPrimary}
+          onPress={async () => await Linking.openURL('https://www.instagram.com/zwag.app/')}
+        />
+        <Ionicons
+          name="logo-tiktok"
+          size={24}
+          color={COLORS.textPrimary}
+          onPress={async () => await Linking.openURL('https://www.tiktok.com/@zwag.app')}
+        />
+        <Ionicons
+          name="earth"
+          size={24}
+          color={COLORS.textPrimary}
+          onPress={async () => await Linking.openURL('https://www.zwag.app')}
+        />
+        </View>
+      </View>
+      </Animated.View>
 
-          {/* Sign Out Button */}
-          <View style={styles.signOutSection}>
-            <MenuItem
-              icon="log-out-outline"
-              title="Sign Out"
-              onPress={handleSignOut}
-              showArrow={false}
-              danger={true}
-            />
-          </View>
-        </Animated.View>
-        <Text > Made With ❤️ </Text>
-      </SafeAreaView>
+    </SafeAreaView>
   );
 }
 
@@ -347,7 +375,7 @@ const styles = StyleSheet.create({
   },
   signOutSection: {
     marginTop: SPACING.lg,
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.sm,
     backgroundColor: COLORS.pureWhite,
     marginHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,

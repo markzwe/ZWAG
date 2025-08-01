@@ -22,7 +22,7 @@ export default function CategoryModal({
   visible,
   onClose,
   setCategory,
-  setSubcategory
+  setSubcategory,
 }: CategoryModalProps) {
   // Category and subcategory options
   const categoryOptions = [
@@ -35,12 +35,65 @@ export default function CategoryModal({
   ];
 
   const subcategoryOptions: Record<string, string[]> = {
-    Tops: ["T-Shirts", "Blouses", "Tank Tops", "Sweaters"],
-    Bottoms: ["Jeans", "Shorts", "Skirts"],
-    Outerwear: ["Jackets", "Coats", "Blazers"],
-    Shoes: ["Sneakers", "Heels", "Boots"],
-    Accessories: ["Hats", "Bags", "Jewelry"],
-    "Full Body": ["Dresses", "Jumpsuits", "Rompers"],
+    Tops: [
+      "T-Shirts",
+      "Shirts",
+      "Tank Tops",
+      "Sweaters",
+      "Polos",
+      "Henleys",
+      "Dress Shirts",
+      "Long Sleeve Shirts",
+      "Short Sleeve Shirts",
+      "Hoodies",
+      "Cardigans",
+      "Vests",
+    ],
+    Bottoms: [
+      "Jeans",
+      "Chinos",
+      "Dress Pants",
+      "Shorts",
+      "Joggers",
+      "Sweatpants",
+      "Cargo Pants",
+      "Khakis",
+    ],
+    Outerwear: [
+      "Jackets",
+      "Coats",
+      "Blazers",
+      "Bomber Jackets",
+      "Denim Jackets",
+      "Leather Jackets",
+      "Parkas",
+      "Windbreakers",
+      "Raincoats",
+    ],
+    Shoes: [
+      "Sneakers",
+      "Dress Shoes",
+      "Boots",
+      "Loafers",
+      "Sandals",
+      "Oxfords",
+      "Derby Shoes",
+      "Chelsea Boots",
+      "Monk Straps",
+    ],
+    Accessories: [
+      "Hats",
+      "Bags",
+      "Jewelry",
+      "Belts",
+      "Watches",
+      "Sunglasses",
+      "Scarves",
+      "Ties",
+      "Pocket Squares",
+      "Cufflinks",
+    ],
+    "Full Body": ["Suits", "Dresses", "Jumpsuits", "Rompers", "Coveralls"],
   };
 
   const [selectedCategory, setSelectedCategory] = React.useState("");
@@ -68,7 +121,6 @@ export default function CategoryModal({
     onClose();
   };
 
-  
   return (
     <Modal
       visible={visible}
@@ -80,15 +132,21 @@ export default function CategoryModal({
         <BlurView intensity={60} tint="dark" style={styles.sheetContainer}>
           <View style={styles.headerRow}>
             {showSubcategories && (
-            <TouchableOpacity onPress={() => setShowSubcategories(false)}>
-              <Ionicons name="arrow-back" size={28} color={COLORS.pureWhite} />
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowSubcategories(false)}>
+                <Ionicons
+                  name="arrow-back"
+                  size={28}
+                  color={COLORS.pureWhite}
+                />
+              </TouchableOpacity>
             )}
-            <Text style={styles.title}>{showSubcategories? selectedCategory: 'Select a Category'}</Text>
+            <Text style={styles.title}>
+              {showSubcategories ? selectedCategory : "Select a Category"}
+            </Text>
             {!showSubcategories && (
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color={COLORS.textPrimary} />
-            </TouchableOpacity>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Ionicons name="close" size={28} color={COLORS.textPrimary} />
+              </TouchableOpacity>
             )}
           </View>
 
@@ -118,13 +176,12 @@ export default function CategoryModal({
                     >
                       {option}
                     </Text>
-                      <Ionicons
-                        name="chevron-forward-outline"
-                        size={20}
-                        color={COLORS.textSecondary}
-                        style={{ marginLeft: 8 }}
-                      />
-              
+                    <Ionicons
+                      name="chevron-forward-outline"
+                      size={20}
+                      color={COLORS.textSecondary}
+                      style={{ marginLeft: 8 }}
+                    />
                   </TouchableOpacity>
                 );
               })}

@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthenticatedUser } from "./users";
+import { Id } from "./_generated/dataModel";
 
 export const generatedUploadUrl = mutation(async(ctx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -126,6 +127,34 @@ export const getItemsForGenerateOutfit = query({
 })
 
 
+export const getOutfitItemsFromAi = query({
+  args: {
+    top: v.optional(v.id("items")),
+    bottom: v.optional(v.id("items")),
+    shoes: v.optional(v.id("items")),
+    outerwear: v.optional(v.id("items")),
+    accessories: v.optional(v.id("items")), // typo preserved if AI returns it this way
+  },
+  handler: async (ctx, outfit) => {
+    const ids = Object.values(outfit).filter(Boolean);
+
+    const allItems = await ctx.db
+      .query("items")
+      .filter((q) => q.or(...ids.map((id) => q.eq(q.field("_id"), id!))))
+      .collect();
+
+    const byId = Object.fromEntries(allItems.map((item) => [item._id, item]));
+
+    return {
+      top: outfit.top ? byId[outfit.top] : null,
+      bottom: outfit.bottom ? byId[outfit.bottom] : null,
+      shoes: outfit.shoes ? byId[outfit.shoes] : null,
+      outerwear: outfit.outerwear ? byId[outfit.outerwear] : null,
+      accessories: outfit.accessories ? byId[outfit.accessories] : null,
+    };
+  },
+});
+
 //used in askPrefrencedItem.tsx
 export const getItemsByIds = query({
   args: { itemIds: v.array(v.id("items")) },
@@ -224,4 +253,24 @@ export const updateItem = mutation({
 
     return true;
   },
+});
+export const deleteItem = mutation({
+  args: { itemId: v.id("items") },
+  handler: async (ctx, { itemId }) => { 
+    const user = await getAuthenticatedUser(ctx);
+    if (!user) throw new Error("Unauthorized");
+
+    // Find the item, ensure it belongs to the user
+    const item = await ctx.db.get(itemId);
+    if (!item) throw new Error("Item not found");
+    if (item.userId !== user._id) throw new Error("Not authorized to delete this item");
+
+    // Delete the item
+    await ctx.db.delete(itemId);
+
+    // delete the associated storage file
+    await ctx.storage.delete(item.storageId as Id<"_storage">);
+
+    return true;
+  }
 });

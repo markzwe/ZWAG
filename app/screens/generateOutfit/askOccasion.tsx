@@ -29,7 +29,7 @@ export default function AskOccasion() {
   };
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      <TouchableOpacity onPress={() => router.push('/(tabs)')} style={styles.backButton}>
         <Ionicons name="chevron-back" size={24} color={COLORS.offWhite} />
       </TouchableOpacity>
       <View style={styles.section}>
