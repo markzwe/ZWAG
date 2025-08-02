@@ -56,15 +56,14 @@ export default function AiGenerateOutfit() {
     if (!outfitResult) return;
 
     const outfitData = {
-        top: outfitResult.top || ("" as Id<"items">),
-        bottom: outfitResult.bottom || ("" as Id<"items">),
-        shoes: outfitResult.shoes || undefined,
-        outerwear: outfitResult.outerwear || undefined,
-        accessories: Array.isArray(outfitResult.accessories)
-          ? outfitResult.accessories
-          : undefined,
-        fullBody: outfitResult.fullBody ? outfitResult.fullBody : undefined,
-
+      top: outfitResult.top || ("" as Id<"items">),
+      bottom: outfitResult.bottom || ("" as Id<"items">),
+      shoes: outfitResult.shoes || undefined,
+      outerwear: outfitResult.outerwear || undefined,
+      accessories: Array.isArray(outfitResult.accessories)
+        ? outfitResult.accessories
+        : undefined,
+      fullBody: outfitResult.fullBody ? outfitResult.fullBody : undefined,
     };
 
     try {
@@ -96,8 +95,19 @@ export default function AiGenerateOutfit() {
       let parsed = null;
       if (typeof result === "string") {
         try {
-          parsed = JSON.parse(result);
-          console.log("Parsed AI response:", parsed);
+          const rawParsed = JSON.parse(result);
+          console.log("Raw regenerate AI response:", rawParsed);
+
+          // Clean up the response by removing empty strings and invalid values
+          parsed = Object.entries(rawParsed).reduce((acc, [key, value]) => {
+            // Only include fields with valid, non-empty string values
+            if (value && typeof value === "string" && value.trim() !== "") {
+              acc[key] = value;
+            }
+            return acc;
+          }, {} as any);
+
+          console.log("Cleaned regenerate AI response:", parsed);
         } catch (e) {
           setError("AI response was not valid JSON");
           parsed = null;
@@ -135,8 +145,19 @@ export default function AiGenerateOutfit() {
         let parsed = null;
         if (typeof result === "string") {
           try {
-            parsed = JSON.parse(result);
-            console.log("Parsed AI response:", parsed);
+            const rawParsed = JSON.parse(result);
+            console.log("Raw AI response:", rawParsed);
+
+            // Clean up the response by removing empty strings and invalid values
+            parsed = Object.entries(rawParsed).reduce((acc, [key, value]) => {
+              // Only include fields with valid, non-empty string values
+              if (value && typeof value === "string" && value.trim() !== "") {
+                acc[key] = value;
+              }
+              return acc;
+            }, {} as any);
+
+            console.log("Cleaned AI response:", parsed);
           } catch (e) {
             setError("AI response was not valid JSON");
             parsed = null;

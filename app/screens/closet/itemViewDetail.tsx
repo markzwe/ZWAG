@@ -4,6 +4,7 @@ import { Id } from "@/convex/_generated/dataModel";
 // import { deleteItem } from "@/convex/items"; // Remove this line
 import BrandModal from "@/modals/BrandModal";
 import CategoryModal from "@/modals/CategoryModal";
+import ColorModal from "@/modals/ColorModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -41,6 +42,8 @@ export default function ItemViewDetail() {
   const [brand, setBrand] = useState("");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showBrandModal, setShowBrandModal] = useState(false);
+    const [showColorModal, setShowColorModal] = useState<boolean>(false);
+  
 
   const styleOptions = [
     "Casual",
@@ -108,6 +111,10 @@ export default function ItemViewDetail() {
       },
     ]);
   };
+  const handleGoBackandSave = () => {
+    router.back();
+    handleSave();
+  }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
@@ -115,7 +122,7 @@ export default function ItemViewDetail() {
       <View style={[styles.header, { paddingTop: insets.top}]}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={handleGoBackandSave}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.offWhite} />
         </TouchableOpacity>
@@ -205,26 +212,27 @@ export default function ItemViewDetail() {
             </ScrollView>
           </View>
 
-          {/* Color Section */}
+        {/* Color Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Color</Text>
-            <View style={styles.inputCard}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Navy blue, charcoal gray..."
-                placeholderTextColor={COLORS.textSecondary}
-                value={color}
-                onChangeText={setColor}
-                selectionColor={COLORS.textPrimary}
-              />
+            <TouchableOpacity
+              style={styles.inputCard}
+              onPress={() => setShowColorModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[styles.pickerText, !color && styles.placeholderText]}
+              >
+                {color || "Select color"}
+              </Text>
               <View style={styles.inputIcon}>
                 <Ionicons
-                  name="color-palette-outline"
+                  name="chevron-down"
                   size={20}
                   color={COLORS.textSecondary}
                 />
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Brand Section */}
@@ -276,7 +284,7 @@ export default function ItemViewDetail() {
       </ScrollView>
 
       {/* Fixed Bottom Button */}
-      <View
+      {/* <View
         style={[styles.bottomContainer, { paddingBottom: insets.bottom }]}
       >
         <TouchableOpacity
@@ -295,7 +303,7 @@ export default function ItemViewDetail() {
           />
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {/* Category Modal */}
       <CategoryModal
@@ -304,6 +312,15 @@ export default function ItemViewDetail() {
         setCategory={setCategory}
         setSubcategory={setSubcategory}
       />
+
+           {/* Color Modal */}
+            <ColorModal
+              visible={showColorModal}
+              onClose={() => setShowColorModal(false)}
+              setColor={setColor}
+              selectedColor={color}
+            />
+      
 
       {/* Brand Modal */}
       <BrandModal
@@ -482,6 +499,12 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: SPACING.md,
     backgroundColor: COLORS.primaryBackground,
+  },
+  placeholderText: {
+    marginTop: SPACING.sm,
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
   },
   saveButton: {
     backgroundColor: COLORS.textPrimary,

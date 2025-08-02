@@ -2,6 +2,7 @@ import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import BrandModal from "@/modals/BrandModal";
 import CategoryModal from "@/modals/CategoryModal";
+import ColorModal from "@/modals/ColorModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
 import * as FileSystem from "expo-file-system";
@@ -32,6 +33,7 @@ export default function AddedItem() {
   const [caption, setCaption] = useState<string>("");
   const [showCategoryModal, setShowCategoryModal] = useState<boolean>(false);
   const [showBrandModal, setShowBrandModal] = useState<boolean>(false);
+  const [showColorModal, setShowColorModal] = useState<boolean>(false);
 
   const styleOptions = [
     "Casual",
@@ -58,7 +60,7 @@ export default function AddedItem() {
 
   const saveToWardrobe = async () => {
     if (!processedImageUri) return;
-    console.log('styleOptions:', styleOptions);
+    console.log("styleOptions:", styleOptions);
     try {
       const uploadUrl = await generatedUploadUrl();
       const uploadResult = await FileSystem.uploadAsync(
@@ -100,7 +102,7 @@ export default function AddedItem() {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.push("/(tabs)",)}
+          onPress={() => router.push("/(tabs)")}
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.offWhite} />
         </TouchableOpacity>
@@ -195,23 +197,24 @@ export default function AddedItem() {
           {/* Color Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Color</Text>
-            <View style={styles.inputCard}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Navy blue, charcoal gray..."
-                placeholderTextColor={COLORS.textSecondary}
-                value={color}
-                onChangeText={setColor}
-                selectionColor={COLORS.textPrimary}
-              />
+            <TouchableOpacity
+              style={styles.inputCard}
+              onPress={() => setShowColorModal(true)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[styles.pickerText, !color && styles.placeholderText]}
+              >
+                {color || "Select color"}
+              </Text>
               <View style={styles.inputIcon}>
                 <Ionicons
-                  name="color-palette-outline"
+                  name="chevron-down"
                   size={20}
                   color={COLORS.textSecondary}
                 />
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Brand Section */}
@@ -287,6 +290,14 @@ export default function AddedItem() {
         setSubcategory={setSubcategory}
       />
 
+      {/* Color Modal */}
+      <ColorModal
+        visible={showColorModal}
+        onClose={() => setShowColorModal(false)}
+        setColor={setColor}
+        selectedColor={color}
+      />
+
       {/* Brand Modal */}
       <BrandModal
         visible={showBrandModal}
@@ -343,7 +354,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SPACING.sm,
-    paddingBottom: 20,
+    paddingBottom: 100, // Add space for the bottom button
   },
   imageCard: {
     position: "relative",

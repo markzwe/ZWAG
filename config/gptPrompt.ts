@@ -21,33 +21,57 @@ const createPrompt = (items: Item[], context: Context): string => {
         return acc;
     }, {} as { [key: string]: string[] });
     
+    // Create lists of available categories
+    const availableCategories = Object.keys(itemsBySubcategory);
+    const requiredCategories = ['top', 'bottom'];
+    const optionalCategories = ['shoes', 'outerwear', 'accessories'];
+    
+    // Separate preferred and non-preferred items for better visibility
+    const preferredItems = items.filter(item => context.preferredItemsId.includes(item.id));
+    const otherItems = items.filter(item => !context.preferredItemsId.includes(item.id));
+    
     return `
-Create a ${context.occasion} outfit for ${context.weather} weather.
 
-Available items:
-${items.map(item => `${item.id}: ${item.subcategory} (${item.color})`).join('\n')}
+Create a ${context.occasion} outfit for ${context.weather} weather. Do research the latest fashion trends and styles.
 
-Preferred items: ${context.preferredItemsId.join(', ') || 'none'}
+${preferredItems.length > 0 ? `
+PREFERRED ITEMS (MUST TRY TO INCLUDE THESE FIRST):
+${preferredItems.map(item => `${item.id}: ${item.subcategory} - ${item.color} ${item.caption} ⭐ PREFERRED`).join('\n')}
 
-RULES:
-- top: choose from items with subcategory "top"
-- bottom: choose from items with subcategory "bottom"  
-- shoes: choose from items with subcategory "shoes"
-- outerwear: choose from items with subcategory "outerwear"
-- accessories: choose from items with subcategory "accessories"
-- Use "" if no item available for category
-- Match colors well together
-- Appropriate for ${context.weather} weather
+OTHER AVAILABLE ITEMS:
+${otherItems.map(item => `${item.id}: ${item.subcategory} - ${item.color} ${item.caption}`).join('\n')}
+` : `
+Available items by category:
+${items.map(item => `${item.id}: ${item.subcategory} - ${item.color} ${item.caption}`).join('\n')}
+`}
 
-Valid IDs by category:
-top: ${itemsBySubcategory.top?.join(', ') || 'none - use ""'}
-bottom: ${itemsBySubcategory.bottom?.join(', ') || 'none - use ""'}
-shoes: ${itemsBySubcategory.shoes?.join(', ') || 'none - use ""'}
-outerwear: ${itemsBySubcategory.outerwear?.join(', ') || 'none - use ""'}
-accessories: ${itemsBySubcategory.accessories?.join(', ') || 'none - use ""'}
+CRITICAL RULES:
+1. PRIORITIZE PREFERRED ITEMS: ${preferredItems.length > 0 ? 'MUST try to include as many preferred items (⭐) as possible in the outfit' : 'No preferred items specified'}
+2. REQUIRED: Must include "top", "bottom",  "shoes", "outerwear", "accessories" these are mandatory
+3. Choose available and appropriate for occasion and weather
+4. ONLY use IDs from the exact list above - NO other values allowed
+5. NEVER use empty strings ("") - omit the field entirely instead
+6. Create variety - don't repeat the same combinations
+7. Match colors and styles appropriately for ${context.weather} weather
 
-Return only JSON:
-{"top":"","bottom":"","shoes":"","outerwear":"","accessories":""}
+VALID IDs BY CATEGORY:
+${availableCategories.map(cat => 
+    `${cat}: ${itemsBySubcategory[cat]?.join(', ')}`
+).join('\n')}
+
+RESPONSE FORMAT:
+Return ONLY valid JSON with available categories. Example formats:
+
+If you have top, bottom, shoes:
+{"top":"id1","bottom":"id2","shoes":"id3"}
+
+If you only have top and bottom:
+{"top":"id1","bottom":"id2"}
+
+If you have all categories:
+{"top":"id1","bottom":"id2","shoes":"id3","outerwear":"id4","accessories":"id5"}
+
+IMPORTANT: Do NOT include fields with empty strings. Only include fields with valid IDs.
 `;
 };
 

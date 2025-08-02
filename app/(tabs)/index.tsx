@@ -1,11 +1,12 @@
 import Header from "@/components/Header";
 import { BORDER_RADIUS, COLORS, FONT_SIZES, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
+import { useImageRotation } from "@/hooks/useImageRotation";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -20,11 +21,6 @@ export default function Closet() {
   const getImageUrls = useQuery(api.items.getPreviewImageByCategory);
   const countItems = useQuery(api.items.countItemsByCategory);
 
-  // State to track current image index for each category
-  const [currentImageIndices, setCurrentImageIndices] = useState<
-    Record<string, number>
-  >({});
-
   const CATEGORY_NAMES: Record<string, string> = {
     top: "Tops",
     bottom: "Bottoms",
@@ -34,98 +30,64 @@ export default function Closet() {
     accessories: "Accessories",
   };
 
-  // Build categories array from live database data and filter out empty ones
-  const categories = Object.entries(CATEGORY_NAMES)
-    .map(([key, displayName]) => ({
-      name: displayName,
-      count: countItems?.[displayName] || 0,
-      images:
-        getImageUrls?.find((item) => item.category === displayName)?.images ||
-        [],
-    }))
-    .filter((category) => category.count > 0); // Only show categories with items
+  // Memoize categories to prevent unnecessary recalculations
+  const categories = useMemo(() => {
+    if (!getImageUrls || !countItems) return [];
 
-  // Initialize image indices when data loads
-  useEffect(() => {
-    if (getImageUrls && getImageUrls.length > 0) {
-      const initialIndices: Record<string, number> = {};
-      getImageUrls.forEach((item) => {
-        initialIndices[item.category] = 0;
-      });
-      setCurrentImageIndices(initialIndices);
-    }
-  }, [getImageUrls]);
+    return Object.entries(CATEGORY_NAMES)
+      .map(([key, displayName]) => ({
+        name: displayName,
+        count: countItems[displayName] || 0,
+        images:
+          getImageUrls.find((item) => item.category === displayName)?.images ||
+          [],
+      }))
+      .filter((category) => category.count > 0);
+  }, [getImageUrls, countItems]);
 
-  // Set up image rotation timer
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndices((prevIndices) => {
-        const newIndices = { ...prevIndices };
+  // Use the custom image rotation hook
+  const { getCurrentImageUrl } = useImageRotation({
+    categories,
+    intervalMs: 10000, // 10 seconds
+  });
 
-        categories.forEach((category) => {
-          if (category.images.length > 1) {
-            const currentIndex = prevIndices[category.name] || 0;
-            newIndices[category.name] =
-              (currentIndex + 1) % category.images.length;
-          }
-        });
-
-        return newIndices;
-      });
-    }, 10000); // 10 seconds
-
-    return () => clearInterval(interval);
-  }, [categories]);
-
-  // Get current image URL for a category
-  const getCurrentImageUrl = (categoryName: string, images: string[]) => {
-    if (images.length === 0) {
-      // Fallback image if no images available
-      return "https://i.ebayimg.com/images/g/gYkAAOSwaA5Wi0WK/s-l1200.jpg";
-    }
-
-    const currentIndex = currentImageIndices[categoryName] || 0;
-    return images[currentIndex] || images[0];
-  };
-
-  const renderCategoryCard = (category: any, index: number) => (
-    <TouchableOpacity
-      key={index}
-      style={[
-        styles.categoryCard,
-        index % 2 === 0 ? styles.cardEven : styles.cardOdd,
-      ]}
-      onPress={() => {
-        // Navigate to category screen
-        console.log(`Navigate to ${category.name}`);
-        router.push({
-          pathname: "/screens/closet/browseItems",
-          params: { categoryName: category.name },
-        });
-      }}
-    >
-      {/* Dynamic Background Image from database */}
-      <Image
-        source={{
-          uri: getCurrentImageUrl(category.name, category.images),
+  // Memoized category card renderer
+  const renderCategoryCard = useCallback(
+    (category: any, index: number) => (
+      <TouchableOpacity
+        key={`${category.name}-${category.count}`} // Stable key based on content
+        style={[
+          styles.categoryCard,
+          index % 2 === 0 ? styles.cardEven : styles.cardOdd,
+        ]}
+        onPress={() => {
+          router.push({
+            pathname: "/screens/closet/browseItems",
+            params: { categoryName: category.name },
+          });
         }}
-        style={styles.cardBackgroundImage}
-        contentFit="contain"
-        transition={300} // Smooth transition between images
-      />
-      <View style={styles.cardContent}>
-        <View style={styles.categoryText}>
-          <Text style={styles.categoryTitle}>{category.name}</Text>
-          <Text style={styles.categoryCount}>{category.count} items</Text>
+      >
+        {/* Dynamic Background Image from database */}
+        <Image
+          source={{
+            uri: getCurrentImageUrl(category.name, category.images),
+          }}
+          style={styles.cardBackgroundImage}
+          contentFit="contain"
+          transition={300} // Smooth transition between images
+          cachePolicy="memory-disk" // Enable aggressive caching
+        />
+        <View style={styles.cardContent}>
+          <View style={styles.categoryText}>
+            <Text style={styles.categoryTitle}>{category.name}</Text>
+            <Text style={styles.categoryCount}>{category.count} items</Text>
+          </View>
         </View>
-      </View>
-      <View style={styles.cardAccent} />
-    </TouchableOpacity>
+        <View style={styles.cardAccent} />
+      </TouchableOpacity>
+    ),
+    [getCurrentImageUrl]
   );
-
-  const broweByCategories = () => {
-    router.push("/screens/closet/browseItems");
-  };
 
   return (
     <View style={[{ paddingTop: insets.top }, styles.container]}>

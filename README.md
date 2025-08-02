@@ -24,7 +24,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Project Overview
 
-ZWAG is an iOS-first mobile app designed to help users dress better by leveraging AI-powered outfit suggestions tailored to their personal wardrobe. Users upload photos of their clothing items, which are processed to create a digital wardrobe. The AI analyzes the wardrobe and recommends stylish, personalized outfit combinations based on occasion, mood, and fashion trends.
+ZWAG is an iOS-first mobile app designed to help men dress better by leveraging AI-powered outfit suggestions tailored to their personal wardrobe. Users upload photos of their clothing items, which are processed to create a digital wardrobe. The AI analyzes the wardrobe and recommends stylish, personalized outfit combinations based on occasion, mood, and fashion trends.
 
 ---
 

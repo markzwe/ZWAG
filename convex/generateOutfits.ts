@@ -21,10 +21,8 @@ export const analyzeOutfit = action({
   },
   handler: async (ctx, { items, occasion, weather, preferredItemsId }): Promise<string | null> => {
     // Get items by calling the query from the items module
-    // Filter preferred items if specified
-    const filteredItems = preferredItemsId.length > 0 
-      ? items.filter(item => preferredItemsId.includes(item._id))
-      : items;
+    // NOTE: We don't filter items here - we pass ALL items to the AI
+    // The AI will prioritize preferred items based on the prompt instructions
 
     // Map items to match Item interface (rename _id to id)
     const mappedItems = items.map(item => ({
@@ -38,7 +36,7 @@ export const analyzeOutfit = action({
 
     // Construct the prompt for the AI model
     const prompt = generateOutfitPrompt(
-      mappedItems,
+      mappedItems, // Pass ALL items, not just preferred ones
       {
         occasion: occasion || "Casual",
         weather: weather || "Sunny",

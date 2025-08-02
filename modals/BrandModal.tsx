@@ -1,15 +1,16 @@
+import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
-  Modal,
-  Text,
-  View,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
   FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS, SPACING } from "@/constants/theme"; // Replace with your own theme or remove
+import { brands } from "@/assets/data/brands"; // Assuming you have a list of brands in this file
 
 type BrandModalProps = {
   visible: boolean;
@@ -17,7 +18,11 @@ type BrandModalProps = {
   setBrand: (brand: string) => void; // Function to set the selected brand
 };
 
-export default function BrandModal({ visible, onClose, setBrand }: BrandModalProps) {
+export default function BrandModal({
+  visible,
+  onClose,
+  setBrand,
+}: BrandModalProps) {
   const [search, setSearch] = React.useState("");
 
   const capitalizeWords = (text: string) => {
@@ -32,7 +37,7 @@ export default function BrandModal({ visible, onClose, setBrand }: BrandModalPro
     setSearch(capitalized);
   };
 
-  const brands = ["NIKE", "ADIDAS", "PUMA", "REEBOK", "UNDER ARMOUR", "ASICS", "NEW BALANCE", "CONVERSE", "VANS", "FILA"];
+  
 
   return (
     <Modal
@@ -43,27 +48,55 @@ export default function BrandModal({ visible, onClose, setBrand }: BrandModalPro
       onRequestClose={onClose}
     >
       <View style={styles.modalContent}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}></Text>
-          <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={24} color="#000" />
+          <Text style={styles.title}>Select Brand</Text>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Ionicons name="close" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
         </View>
 
-        <TextInput
-          placeholder="Search brands..."
-          placeholderTextColor="#888"
-          style={styles.searchInput}
-          value={search}
-          onChangeText={handleSearchChange}
-          returnKeyType="search"
-        />
+        {/* Search Input */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons
+              name="search"
+              size={20}
+              color={COLORS.textSecondary}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              placeholder="Search brands..."
+              placeholderTextColor={COLORS.textSecondary}
+              style={styles.searchInput}
+              value={search.toUpperCase()}
+              onChangeText={handleSearchChange}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => setSearch("")}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
         <FlatList
           data={brands.filter((brand) =>
             brand.toLowerCase().includes(search.toLowerCase())
           )}
           keyExtractor={(item) => item}
+          style={styles.listContainer}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.brandItem}
@@ -71,6 +104,7 @@ export default function BrandModal({ visible, onClose, setBrand }: BrandModalPro
                 setBrand(item);
                 onClose();
               }}
+              activeOpacity={0.7}
             >
               <Text style={styles.brandText}>{item}</Text>
             </TouchableOpacity>
@@ -81,39 +115,93 @@ export default function BrandModal({ visible, onClose, setBrand }: BrandModalPro
   );
 }
 
-
 const styles = StyleSheet.create({
   modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
+    flex: 1,
+    backgroundColor: COLORS.primaryBackground,
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.sm,
+    justifyContent: "center",
+    paddingTop: 20,
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.primaryBackground,
+    position: "relative",
   },
   title: {
     fontSize: 18,
     fontWeight: "600",
+    color: COLORS.textPrimary,
+    textAlign: "center",
+    letterSpacing: -0.3,
+  },
+  closeButton: {
+    position: "absolute",
+    right: SPACING.md,
+    top: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.offWhite,
+    alignItems: "center",
+    justifyContent: "center",
+    ...SHADOWS.sm,
+  },
+  searchContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
+    backgroundColor: COLORS.primaryBackground,
+  },
+  searchInputContainer: {
+    position: "relative",
+    backgroundColor: COLORS.pureWhite,
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
+  },
+  searchIcon: {
+    position: "absolute",
+    left: SPACING.sm,
+    top: "50%",
+    transform: [{ translateY: -10 }],
+    zIndex: 1,
   },
   searchInput: {
-    height: 40,
-    borderColor: "#ddd",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    marginBottom: SPACING.md,
-    color: "#000",
+    paddingLeft: 45,
+    paddingRight: 45,
+    paddingVertical: SPACING.md,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontWeight: "400",
+  },
+  clearButton: {
+    position: "absolute",
+    right: SPACING.sm,
+    top: "50%",
+    transform: [{ translateY: -10 }],
+    padding: 4,
+  },
+  listContainer: {
+    flex: 1,
+    paddingTop: SPACING.sm,
   },
   brandItem: {
-    paddingVertical: 12,
-    borderBottomColor: "#eee",
-    borderBottomWidth: 1,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.xs,
+    backgroundColor: COLORS.pureWhite,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
   },
   brandText: {
     fontSize: 16,
-    color: "#333",
+    color: COLORS.textPrimary,
+    fontWeight: "500",
   },
 });

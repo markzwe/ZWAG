@@ -29,7 +29,6 @@ type GeneratedOutfitsCanvasProps = {
     accessories?: Id<"items">[];
     fullBody?: Id<"items">;
   };
- 
 };
 
 export default function GeneratedOutfitsCanvas({
@@ -58,15 +57,20 @@ export default function GeneratedOutfitsCanvas({
   };
 
   const items = useQuery(api.items.getOutfitItemsFromAi, outfitItemIds);
-  const outfit = useMutation(api.outfits.saveOutfit)
+  const outfit = useMutation(api.outfits.saveOutfit);
 
-    
+  // Helper function to get safe image URL with better optimization
+  const getSafeImageUrl = (url?: string) => {
+    if (!url || url.trim() === "") return "";
+    // Add image optimization parameters if using a CDN like Cloudinary
+    return url;
+  };
 
   // Load images using Skia's useImage hook
-  const topImg = useImage(items?.top?.imageUrl ?? "");
-  const bottomImg = useImage(items?.bottom?.imageUrl ?? "");
-  const shoesImg = useImage(items?.shoes?.imageUrl ?? "");
-  const outerwearImg = useImage(items?.outerwear?.imageUrl ?? "");
+  const topImg = useImage(getSafeImageUrl(items?.top?.imageUrl));
+  const bottomImg = useImage(getSafeImageUrl(items?.bottom?.imageUrl));
+  const shoesImg = useImage(getSafeImageUrl(items?.shoes?.imageUrl));
+  const outerwearImg = useImage(getSafeImageUrl(items?.outerwear?.imageUrl));
   // For accessories, always call a fixed number of useImage hooks to avoid hook order errors
   const MAX_ACCESSORIES = 5;
   const accessoriesArr = Array.isArray(items?.accessories)
@@ -76,11 +80,11 @@ export default function GeneratedOutfitsCanvas({
       : [];
 
   const accessoriesImgs = [
-    useImage(accessoriesArr[0]?.imageUrl ?? ""),
-    useImage(accessoriesArr[1]?.imageUrl ?? ""),
-    useImage(accessoriesArr[2]?.imageUrl ?? ""),
-    useImage(accessoriesArr[3]?.imageUrl ?? ""),
-    useImage(accessoriesArr[4]?.imageUrl ?? ""),
+    useImage(getSafeImageUrl(accessoriesArr[0]?.imageUrl)),
+    useImage(getSafeImageUrl(accessoriesArr[1]?.imageUrl)),
+    useImage(getSafeImageUrl(accessoriesArr[2]?.imageUrl)),
+    useImage(getSafeImageUrl(accessoriesArr[3]?.imageUrl)),
+    useImage(getSafeImageUrl(accessoriesArr[4]?.imageUrl)),
   ];
 
   const [itemDetailVisible, setItemDetailVisible] = React.useState(false);
@@ -127,7 +131,7 @@ export default function GeneratedOutfitsCanvas({
           {topImg && (
             <SkiaImage
               image={topImg}
-              x={15}
+              x={!outerwearImg ? 110 : 15} // Center if no outerwear, otherwise position left
               y={15}
               width={130}
               height={130}
@@ -139,7 +143,7 @@ export default function GeneratedOutfitsCanvas({
           {bottomImg && (
             <SkiaImage
               image={bottomImg}
-              x={15}
+              x={!outerwearImg ? 110 : 15} // Center if no outerwear, otherwise position left
               y={150}
               width={130}
               height={180}
@@ -151,7 +155,7 @@ export default function GeneratedOutfitsCanvas({
           {shoesImg && (
             <SkiaImage
               image={shoesImg}
-              x={25}
+              x={!outerwearImg ? 125 : 25} // Center if no outerwear, otherwise position left
               y={340}
               width={100}
               height={80}
@@ -177,8 +181,8 @@ export default function GeneratedOutfitsCanvas({
               <SkiaImage
                 key={idx}
                 image={img}
-                x={175 + idx * 45}
-                y={160}
+                x={!outerwearImg ? 75 + idx * 45 : 175 + idx * 45} // Center accessories if no outerwear
+                y={!outerwearImg ? 430 : 160} // Position below shoes if no outerwear, otherwise right side
                 width={50}
                 height={50}
                 fit={"contain"}
