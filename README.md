@@ -58,6 +58,7 @@ ZWAG is an iOS-first mobile app designed to help men dress better by leveraging 
 
 ## Architecture & Workflow
 
+
 1. **Image Upload:** Users upload clothing photos.  
 2. **Captioning & Metadata Extraction:** AI generates descriptive captions and tags.  
 3. **Embedding & Storage:** Captions are embedded and stored for similarity search.  

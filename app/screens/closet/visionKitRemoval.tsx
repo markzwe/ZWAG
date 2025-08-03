@@ -1,137 +1,118 @@
 import { COLORS, SPACING } from "@/constants/theme";
+import { BgRemoverView } from "@/modules/expo-visionKitBgRemover";
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
+// Temporarily using fallback until we recreate the native module
+const ExpoBackgroundRemoverView = View;
+
 export default function VisionKitRemoval() {
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
-  const [backgroundRemovedImageURI, setBackgroundRemovedImageURI] = useState<
-    string | null
-  >(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isReadyContinue, setIsReadyContinue] = useState<boolean>(false); // State to control readiness for navigation
-
-  useEffect(() => {
-    if (!imageUri) {
-      setError("No image provided");
-      setLoading(false);
-      return;
-    }
-
-    const processImage = async () => {
-      try {
-        const resultUri = await removeBg(imageUri);
-        setBackgroundRemovedImageURI(resultUri as string);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    processImage();
-  }, [imageUri]);
-
-  async function removeBg(imageUri: string) {
-    const apiKey = "7C5HUh99oUAkaN9j9dp8kbeY";
-
-    const formData = new FormData();
-    formData.append("size", "preview");
-    formData.append("crop", "true");
-    formData.append("image_file", {
-      uri: imageUri,
-      name: "image.jpg",
-      type: "image/jpeg",
-    });
-
-    const response = await fetch("https://api.remove.bg/v1.0/removebg", {
-      method: "POST",
-      headers: {
-        "X-Api-Key": apiKey,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Remove.bg failed: ${response.status} ${errorText}`);
-    }
-
-    const blob = await response.blob();
-    const reader = new FileReader();
-
-    return new Promise<string>((resolve, reject) => {
-      reader.onloadend = async () => {
-        try {
-          const base64Data = reader.result!.toString().split(",")[1];
-          const uniqueFileName = `no-bg-${Date.now()}.png`;
-          const fileUri = FileSystem.documentDirectory + uniqueFileName;
-          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          resolve(fileUri);
-        } catch (error) {
-          reject(error);
-        } finally {
-          setIsReadyContinue(true);
-        }
-      };
-
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-  console.log(
-    "Processed Image URI removed BG in visionKitRemoval:",
-    backgroundRemovedImageURI
+  const [processedImageUri, setProcessedImageUri] = useState<string | null>(
+    null
   );
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false); // Set to false initially
+
+  // Remove the timeout since we're using simple callback
+  // useEffect(() => {
+  //   const timeout = setTimeout(() => {
+  //     if (loading) {
+  //       console.log("⚠️ Timeout: Native events didn't fire, stopping loading");
+  //       setLoading(false);
+  //       setError("Processing took too long - using original image");
+  //     }
+  //   }, 10000); // 10 second timeout
+
+  //   return () => clearTimeout(timeout);
+  // }, [loading]);
+
+  if (!imageUri) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>No image provided</Text>
+      </View>
+    );
+  }
+
+  console.log("Processed Image URI from VisionKit:", processedImageUri);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>VisionKit Background Removal</Text>
 
-      {loading && <ActivityIndicator size="large" color={COLORS.textPrimary} />}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-      {backgroundRemovedImageURI && (
-        <Image
-          source={{ uri: backgroundRemovedImageURI }} //Replace with the processed image URI
-          style={styles.visionKitView}
-          resizeMode="contain"
-        />
+      <BgRemoverView
+        imageUri={imageUri}
+        style={{ width: "100%", height: "70%", borderRadius: 12 }}
+        onProcessingComplete={(event) => {
+          console.log("🎯 Processing complete:", event);
+          const processedUri = event.processedImageUri || imageUri;
+          setProcessedImageUri(processedUri);
+        }}
+      />
+
+      {/* Loading indicator while processing */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.textPrimary} />
+          <Text style={styles.loadingText}>
+            {processedImageUri
+              ? "Background removal complete!"
+              : "Processing background removal..."}
+          </Text>
+        </View>
       )}
 
-      {/* {isReadyContinue && ( */}
-        <TouchableOpacity
-          style={styles.primaryActionButton}
-          onPress={() =>
-            router.push({
-              pathname: "/screens/closet/addedItem",
-              params: { processedImageUri: imageUri }, // Pass the original image URI for testing
-            })
-          }
-          activeOpacity={0.8}
-        >
-          <Text style={styles.primaryActionButtonText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={20} color={COLORS.pureWhite} />
-        </TouchableOpacity>
-=    </View>
+      {/* Fallback until native module is recreated */}
+      {/* <View style={styles.visionKitView}>
+        <Image
+          source={{ uri: processedImageUri || imageUri }}
+          style={{ flex: 1, borderRadius: 12 }}
+          resizeMode="contain"
+        />
+        <Text style={styles.loadingText}>
+          {processedImageUri
+            ? "Background removed successfully!"
+            : "Native VisionKit module temporarily unavailable - showing original image"}
+        </Text>
+      </View> */}
+
+      {/* Error display */}
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      {/* Continue button */}
+      <TouchableOpacity
+        style={[styles.primaryActionButton, loading && styles.disabledButton]}
+        onPress={() =>
+          router.push({
+            pathname: "/screens/closet/addedItem",
+            params: {
+              processedImageUri: processedImageUri, // Use processed image if available, fallback to original
+            },
+          })
+        }
+        disabled={loading}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.primaryActionButtonText}>Continue</Text>
+        <Ionicons name="arrow-forward" size={20} color={COLORS.pureWhite} />
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.red,
+    backgroundColor: COLORS.primaryBackground, // Changed from red to proper background
     padding: SPACING.md,
     paddingTop: 50,
   },
@@ -142,6 +123,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: SPACING.md,
   },
+  loadingContainer: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -50 }, { translateY: -50 }],
+    alignItems: "center",
+    zIndex: 1,
+  },
+  loadingText: {
+    marginTop: SPACING.sm,
+    color: COLORS.textSecondary,
+    fontSize: 16,
+  },
   visionKitView: {
     flex: 1,
     borderRadius: 12,
@@ -149,8 +143,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: "red",
-    marginTop: 20,
+    marginVertical: SPACING.md,
     textAlign: "center",
+    padding: SPACING.md,
+    backgroundColor: "rgba(255,0,0,0.1)",
+    borderRadius: 8,
   },
   primaryActionButton: {
     flexDirection: "row",
@@ -161,6 +158,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     borderRadius: 8,
     marginTop: 24,
+  },
+  disabledButton: {
+    backgroundColor: COLORS.textSecondary,
+    opacity: 0.6,
   },
   primaryActionButtonText: {
     color: COLORS.pureWhite,

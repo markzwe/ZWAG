@@ -26,6 +26,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="zwag"/>
+        <data android:scheme="exp+zwag"/>
       </intent-filter>
     </activity>
   </application>

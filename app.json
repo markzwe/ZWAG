@@ -40,6 +40,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7e3acfbe-d426-4591-82a4-6dd1476e2285"
+      }
+    },
+    "owner": "mark_zwe"
   }
 }

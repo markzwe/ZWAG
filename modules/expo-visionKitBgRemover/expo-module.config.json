@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["BgRemoverModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.bgremover.BgRemoverModule"]
+  }
+}
