@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["VisionBgRemoverModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.visionbgremover.VisionBgRemoverModule"]
+  }
+}

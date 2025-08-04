@@ -1,8 +1,7 @@
 import { COLORS, SPACING } from "@/constants/theme";
-import { BgRemoverView } from "@/modules/expo-visionKitBgRemover";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { VisionBgRemoverView } from "vision-bg-remover";
 
 // Temporarily using fallback until we recreate the native module
 const ExpoBackgroundRemoverView = View;
@@ -20,20 +20,20 @@ export default function VisionKitRemoval() {
     null
   );
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false); // Set to false initially
+  const [loading, setLoading] = useState<boolean>(true); // Set to true initially
 
-  // Remove the timeout since we're using simple callback
-  // useEffect(() => {
-  //   const timeout = setTimeout(() => {
-  //     if (loading) {
-  //       console.log("⚠️ Timeout: Native events didn't fire, stopping loading");
-  //       setLoading(false);
-  //       setError("Processing took too long - using original image");
-  //     }
-  //   }, 10000); // 10 second timeout
+  // Add a timeout fallback in case native events don't fire
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log("⚠️ Timeout: Native events didn't fire, stopping loading");
+        setLoading(false);
+        setError("Processing took too long - using original image");
+      }
+    }, 10000); // 10 second timeout
 
-  //   return () => clearTimeout(timeout);
-  // }, [loading]);
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   if (!imageUri) {
     return (
@@ -49,13 +49,21 @@ export default function VisionKitRemoval() {
     <View style={styles.container}>
       <Text style={styles.title}>VisionKit Background Removal</Text>
 
-      <BgRemoverView
+      <VisionBgRemoverView
         imageUri={imageUri}
-        style={{ width: "100%", height: "70%", borderRadius: 12 }}
-        onProcessingComplete={(event) => {
-          console.log("🎯 Processing complete:", event);
-          const processedUri = event.processedImageUri || imageUri;
-          setProcessedImageUri(processedUri);
+        style={styles.visionKitView}
+        onProcessingComplete={(event: {
+          nativeEvent: { processedImageUri: string };
+        }) => {
+          console.log("✅ Processing complete:", event.nativeEvent);
+          setProcessedImageUri(event.nativeEvent.processedImageUri);
+          setLoading(false);
+          setError(null);
+        }}
+        onProcessingError={(event: { nativeEvent: { error: string } }) => {
+          console.log("❌ Processing error:", event.nativeEvent);
+          setError(event.nativeEvent.error);
+          setLoading(false);
         }}
       />
 
@@ -95,7 +103,7 @@ export default function VisionKitRemoval() {
           router.push({
             pathname: "/screens/closet/addedItem",
             params: {
-              processedImageUri: processedImageUri, // Use processed image if available, fallback to original
+              processedImageUri: processedImageUri ?? imageUri, // Use processed image if available, fallback to original
             },
           })
         }
@@ -139,6 +147,9 @@ const styles = StyleSheet.create({
   visionKitView: {
     flex: 1,
     borderRadius: 12,
+    backgroundColor: "#f0f0f0", // Add background color to see if view is rendered
+    borderWidth: 2,
+    borderColor: "#ccc", // Add border to see boundaries
   },
   errorText: {
     fontSize: 16,

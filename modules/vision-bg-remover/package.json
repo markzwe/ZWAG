@@ -1,0 +1,19 @@
+{
+  "name": "vision-bg-remover",
+  "version": "1.0.0",
+  "description": "VisionKit background removal module for React Native",
+  "main": "index.ts",
+  "scripts": {},
+  "keywords": [
+    "expo",
+    "expo-module",
+    "react-native",
+    "visionkit",
+    "background-removal"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "peerDependencies": {
+    "expo": "*"
+  }
+}
