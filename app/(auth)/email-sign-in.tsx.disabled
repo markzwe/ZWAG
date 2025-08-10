@@ -1,0 +1,322 @@
+import { COLORS, SPACING } from "@/constants/theme";
+import { useSignIn } from "@clerk/clerk-expo";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+export default function EmailSignIn() {
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const router = useRouter();
+
+  const [emailAddress, setEmailAddress] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  const handleSignIn = async () => {
+    if (!emailAddress || !password) {
+      Alert.alert("Missing Fields", "Please fill in all fields.");
+      return;
+    }
+
+    if (!isLoaded) {
+      return;
+    }
+
+    setIsLoading(true);
+    console.log("=== EMAIL SIGN IN ATTEMPT ===");
+    console.log("Email:", emailAddress);
+
+    try {
+      const signInAttempt = await signIn.create({
+        identifier: emailAddress,
+        password,
+      });
+
+      console.log("Sign-in attempt result:", {
+        status: signInAttempt.status,
+        createdSessionId: signInAttempt.createdSessionId,
+      });
+
+      if (signInAttempt.status === "complete") {
+        console.log("Sign-in complete, setting active session...");
+        await setActive({ session: signInAttempt.createdSessionId });
+        console.log("Session set active, redirecting to tabs...");
+        router.replace("/(tabs)");
+      } else {
+        console.log(
+          "Sign-in not complete:",
+          JSON.stringify(signInAttempt, null, 2)
+        );
+        Alert.alert(
+          "Sign-in Incomplete",
+          "Please check your email for verification or try again."
+        );
+      }
+    } catch (error: any) {
+      console.log("Sign-in error:", JSON.stringify(error, null, 2));
+
+      let errorMessage = "Something went wrong. Please try again.";
+      let errorTitle = "Sign-in Failed";
+
+      // Check for specific error types
+      if (error?.errors && error.errors.length > 0) {
+        const firstError = error.errors[0];
+
+        // Handle password breach error
+        if (firstError.code === "form_password_pwned") {
+          errorTitle = "Password Security Alert";
+          errorMessage =
+            "This password has been found in an online data breach. For your account safety, please use a different password.";
+        }
+        // Handle other specific errors
+        else if (firstError.code === "form_identifier_not_found") {
+          errorTitle = "Account Not Found";
+          errorMessage =
+            "No account found with this email address. Please check your email or create a new account.";
+        } else if (firstError.code === "form_password_incorrect") {
+          errorTitle = "Incorrect Password";
+          errorMessage =
+            "The password you entered is incorrect. Please try again.";
+        } else if (firstError.message) {
+          errorMessage = firstError.message;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert(errorTitle, errorMessage);
+    } finally {
+      setIsLoading(false);
+      console.log("=== EMAIL SIGN IN ATTEMPT END ===");
+    }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  if (!isLoaded) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.textPrimary} />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color={COLORS.pureWhite} />
+        </TouchableOpacity>
+
+        {/* Header */}
+        <View style={styles.headerSection}>
+          <Text style={styles.title}>Sign in with Email</Text>
+          <Text style={styles.subtitle}>
+            Enter your credentials to continue
+          </Text>
+        </View>
+
+        {/* Form */}
+        <View style={styles.formSection}>
+          <TextInput
+            autoCapitalize="none"
+            value={emailAddress}
+            placeholder="Email address"
+            onChangeText={setEmailAddress}
+            style={styles.input}
+            keyboardType="email-address"
+            editable={!isLoading}
+            placeholderTextColor={COLORS.textSecondary}
+            autoFocus
+          />
+
+          <View style={styles.passwordContainer}>
+            <TextInput
+              value={password}
+              placeholder="Password"
+              secureTextEntry={!showPassword}
+              onChangeText={setPassword}
+              style={styles.passwordInput}
+              editable={!isLoading}
+              placeholderTextColor={COLORS.textSecondary}
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={togglePasswordVisibility}
+              disabled={isLoading}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color={COLORS.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.signInButton, isLoading && styles.buttonDisabled]}
+            onPress={handleSignIn}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color={COLORS.pureWhite} />
+            ) : (
+              <Text style={styles.signInButtonText}>Sign In</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Terms Footer */}
+        <View style={styles.termsFooter}>
+          <Text style={styles.termsText}>
+            By continuing you agree to our{" "}
+            <Text style={styles.termsLink}>Terms & Conditions</Text> and{" "}
+            <Text style={styles.termsLink}>Privacy Policy</Text>
+          </Text>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.primaryBackground,
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.primaryBackground,
+    paddingHorizontal: SPACING.xl,
+  },
+  keyboardView: {
+    flex: 1,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.xl,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: COLORS.textPrimary,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: SPACING.lg,
+  },
+  headerSection: {
+    alignItems: "center",
+    marginBottom: SPACING.xl * 1.5,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    textAlign: "center",
+    marginBottom: SPACING.sm,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    fontWeight: "400",
+  },
+  formSection: {
+    gap: SPACING.lg,
+    marginBottom: SPACING.xl,
+  },
+  input: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 12,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+  },
+  passwordContainer: {
+    position: "relative",
+  },
+  passwordInput: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    borderRadius: 12,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingRight: 50,
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+  },
+  eyeButton: {
+    position: "absolute",
+    right: SPACING.lg,
+    top: SPACING.lg,
+    padding: SPACING.xs,
+  },
+  signInButton: {
+    backgroundColor: COLORS.textPrimary,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: SPACING.md,
+  },
+  buttonDisabled: {
+    backgroundColor: COLORS.textSecondary,
+    opacity: 0.5,
+  },
+  signInButtonText: {
+    color: COLORS.pureWhite,
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  termsFooter: {
+    alignItems: "center",
+    marginTop: "auto",
+  },
+  termsText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 18,
+    paddingHorizontal: SPACING.md,
+  },
+  termsLink: {
+    color: COLORS.textPrimary,
+    fontWeight: "500",
+  },
+});

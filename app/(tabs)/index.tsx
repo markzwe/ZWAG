@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: 2,
     height: "100%",
-    backgroundColor: COLORS.black,
+    backgroundColor: COLORS.accent,
     opacity: 0.6,
   },
 

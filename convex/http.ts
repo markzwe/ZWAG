@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
+import { httpAction, internalMutation } from "./_generated/server";
 import { api } from "./_generated/api"
 import { Webhook } from "svix";
 
@@ -69,6 +69,18 @@ http.route({
             } catch (error) {
                 console.error("Error creating user:", error);
                 return new Response("Error creating user", { status: 500 });
+            }
+        }
+
+        if ( evt.type === "user.deleted" ) {
+            const { id } = evt.data;
+            console.log("User deleted event received:", evt.data);
+            try {
+                await ctx.runMutation(api.users.deleteUserByClerkId, { clerkId: id });
+                console.log("User deleted successfully:", { clerkId: id });
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                return new Response("Error deleting user", { status: 500 });
             }
         }
 

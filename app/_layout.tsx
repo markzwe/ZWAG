@@ -1,4 +1,5 @@
 import ClerkandConvexProvider from "@/providers/ClerkandConvexProvider";
+import { StylePreferencesProvider } from "@/providers/StylePreferencesProvider";
 import { Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React from "react";
@@ -9,7 +10,9 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   return (
     <ClerkandConvexProvider>
-      <Slot />
+      <StylePreferencesProvider>
+        <Slot />
+      </StylePreferencesProvider>
     </ClerkandConvexProvider>
   );
 }

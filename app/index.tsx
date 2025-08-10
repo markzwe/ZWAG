@@ -1,9 +1,10 @@
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { Redirect } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
 
 export default function Index() {
   const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
 
   // Show loading while Clerk is initializing
   if (!isLoaded) {
@@ -15,7 +16,7 @@ export default function Index() {
   }
 
   // // Redirect based on authentication status
-  if (isSignedIn) {
+  if (isSignedIn && user?.unsafeMetadata?.hasCompletedOnboarding) {
     return <Redirect href="/(tabs)" />;
   } else {
     return <Redirect href="/onBordingScreens/welcome" />;

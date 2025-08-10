@@ -11,6 +11,9 @@ const COLORS = {
   warmGrayAccent: '#F5F5F5',
   divider: '#D6D6D6',
   border: '#E0E0E0',
+  accent: '#00391e',
+
+  //Testing colors
   red: '#540000ff',
   blue: '#0059b2ff',
   green: '#005904ff',

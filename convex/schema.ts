@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from "convex/server"
-import { v } from "convex/values"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 
 export default defineSchema({
 
@@ -9,11 +9,16 @@ export default defineSchema({
       email: v.string(),
       //Personalization fields
       birthYear: v.optional(v.number()),
-      height: v.optional(v.number()), // in ft
-      weight: v.optional(v.number()), // in lbs
+      height: v.optional(v.string()), // e.g., "5'10'' or 178cm"
+      weight: v.optional(v.string()), // e.g., "165 lbs or 75 kg"
       stylePreferences: v.optional(v.array(v.string())), // e.g. ["techwear", "vintage"]
       favoriteColors: v.optional(v.array(v.string())),   // e.g. ["black", "white"]
       bodyType: v.optional(v.string()),                 // e.g. "slim, triangle"
+      fitPreference: v.optional(v.string()),             // e.g. "oversized", "slim"
+      avoidClothing: v.optional(v.string()),             // clothing types to avoid
+      preferredOccasions: v.optional(v.array(v.string())), // e.g. ["work", "casual"]
+      preferredBrands: v.optional(v.string()),           // comma-separated brands
+      seasonalOutfits: v.optional(v.boolean()),          // weather-based recommendations
 
       numberOfClothes: v.optional(v.number()), // Number of clothes user has
     })

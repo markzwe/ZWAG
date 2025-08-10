@@ -10,9 +10,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarShowLabel: false,
         headerShown: false,
-        
+
         tabBarStyle: {
           backgroundColor: COLORS.pureWhite,
           borderTopColor: COLORS.pureWhite,
@@ -22,11 +21,21 @@ export default function TabLayout() {
         tabBarPosition: "bottom",
         tabBarActiveTintColor: COLORS.pureWhite,
         tabBarInactiveTintColor: COLORS.mediumGray,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: "Poppins_500Medium",
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
+          tabBarLabel: "Closet",
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontFamily: "Poppins_500Medium",
+            color: COLORS.black,
+          },
           tabBarIcon: ({ size, color, focused }) => {
             return (
               <View style={{ alignItems: "center", justifyContent: "center" }}>
@@ -39,13 +48,14 @@ export default function TabLayout() {
             );
           },
           headerBackgroundContainerStyle: {
-          backgroundColor: COLORS.darkGray,
+            backgroundColor: COLORS.darkGray,
           },
         }}
       />
       <Tabs.Screen
         name="recents"
         options={{
+          tabBarLabel: "Fits",
           tabBarIcon: ({ size, color, focused }) => {
             return (
               <View style={{ alignItems: "center", justifyContent: "center" }}>
@@ -65,6 +75,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="generateOutfits"
         options={{
+          tabBarLabel: () => null,
           tabBarIcon: ({ color, focused }) => {
             return (
               <View

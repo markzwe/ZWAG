@@ -14,65 +14,47 @@ interface Context {
 }
 
 const createPrompt = (items: Item[], context: Context): string => {
-    // Group items by subcategory for validation
-    const itemsBySubcategory = items.reduce((acc, item) => {
-        if (!acc[item.subcategory]) acc[item.subcategory] = [];
-        acc[item.subcategory].push(item.id);
+    // Group items by category
+    const itemsByCategory = items.reduce((acc, item) => {
+        const cat = item.category.toLowerCase();
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
         return acc;
-    }, {} as { [key: string]: string[] });
-    
-    // Create lists of available categories
-    const availableCategories = Object.keys(itemsBySubcategory);
-    const requiredCategories = ['top', 'bottom'];
-    const optionalCategories = ['shoes', 'outerwear', 'accessories'];
-    
-    // Separate preferred and non-preferred items for better visibility
+    }, {} as { [key: string]: Item[] });
+
+    // Separate preferred items
     const preferredItems = items.filter(item => context.preferredItemsId.includes(item.id));
     const otherItems = items.filter(item => !context.preferredItemsId.includes(item.id));
-    
-    return `
 
-Create a ${context.occasion} outfit for ${context.weather} weather. Do research the latest fashion trends and styles.
+    // Format items for display
+    const formatItems = (items: Item[]) => 
+        items.map(item => `${item.id}: ${item.color} ${item.subcategory} (${item.style.join(', ')})`).join('\n');
 
-${preferredItems.length > 0 ? `
-PREFERRED ITEMS (MUST TRY TO INCLUDE THESE FIRST):
-${preferredItems.map(item => `${item.id}: ${item.subcategory} - ${item.color} ${item.caption} ⭐ PREFERRED`).join('\n')}
+    return `You are creating a ${context.occasion} outfit for ${context.weather} weather.
 
-OTHER AVAILABLE ITEMS:
-${otherItems.map(item => `${item.id}: ${item.subcategory} - ${item.color} ${item.caption}`).join('\n')}
-` : `
-Available items by category:
-${items.map(item => `${item.id}: ${item.subcategory} - ${item.color} ${item.caption}`).join('\n')}
-`}
+${preferredItems.length > 0 ? `PREFERRED ITEMS:
+${formatItems(preferredItems)}
 
-CRITICAL RULES:
-1. PRIORITIZE PREFERRED ITEMS: ${preferredItems.length > 0 ? 'MUST try to include as many preferred items (⭐) as possible in the outfit' : 'No preferred items specified'}
-2. REQUIRED: Must include "top", "bottom",  "shoes", "outerwear", "accessories" these are mandatory
-3. Choose available and appropriate for occasion and weather
-4. ONLY use IDs from the exact list above - NO other values allowed
-5. NEVER use empty strings ("") - omit the field entirely instead
-6. Create variety - don't repeat the same combinations
-7. Match colors and styles appropriately for ${context.weather} weather
+OTHER ITEMS:
+${formatItems(otherItems)}` : `AVAILABLE ITEMS:
+${formatItems(items)}`}
 
-VALID IDs BY CATEGORY:
-${availableCategories.map(cat => 
-    `${cat}: ${itemsBySubcategory[cat]?.join(', ')}`
-).join('\n')}
+REQUIREMENTS:
+- Must include: top and bottom
+- Include shoes if available: ${itemsByCategory['shoes'] ? 'Yes' : 'No'}
+- Include outerwear if weather requires: ${itemsByCategory['outerwear'] ? 'Available' : 'None'}
+- Add accessories if appropriate: ${itemsByCategory['accessories'] ? 'Available' : 'None'}
 
-RESPONSE FORMAT:
-Return ONLY valid JSON with available categories. Example formats:
+RULES:
+- Only use IDs from the list above
+- Each category needs a different ID
+- Consider weather and occasion appropriateness
+- Vary your selections to avoid repetition
 
-If you have top, bottom, shoes:
-{"top":"id1","bottom":"id2","shoes":"id3"}
+Return only a JSON object with your selection:
+{"top":"id","bottom":"id","shoes":"id","outerwear":"id","accessories":"id"}
 
-If you only have top and bottom:
-{"top":"id1","bottom":"id2"}
-
-If you have all categories:
-{"top":"id1","bottom":"id2","shoes":"id3","outerwear":"id4","accessories":"id5"}
-
-IMPORTANT: Do NOT include fields with empty strings. Only include fields with valid IDs.
-`;
+Omit categories that don't apply or aren't available.`;
 };
 
 export const generateOutfitPrompt = (items: Item[], context: Context): string => {

@@ -6,13 +6,20 @@ import CoreImage
 import VisionKit
 #endif
 
-// Single view class that handles iOS version compatibility internally
+@available(iOS 13.0, *)
 class VisionBgRemoverView: ExpoView {
+  // Events to JS
   let onProcessingComplete = EventDispatcher()
   let onProcessingError = EventDispatcher()
-  
+
   private var imageView: UIImageView!
   private var originalImage: UIImage?
+
+  required init(appContext: AppContext? = nil) {
+    super.init(appContext: appContext)
+    setupView()
+  }
+
   private var isVisionKitAvailable: Bool {
     if #available(iOS 17.0, *) {
       return true
@@ -20,201 +27,211 @@ class VisionBgRemoverView: ExpoView {
       return false
     }
   }
-  
-  required init(appContext: AppContext? = nil) {
-    super.init(appContext: appContext)
-    setupView()
-  }
-  
+
   private func setupView() {
-    // Different colors based on iOS version support
-    if isVisionKitAvailable {
-      backgroundColor = UIColor.red // VisionKit available
-      print("🔍 VisionBgRemoverView initialized with iOS 17+ VisionKit support")
-    } else {
-      backgroundColor = UIColor.orange // Fallback mode
-      print("🔍 VisionBgRemoverView initialized in fallback mode (iOS < 17)")
-    }
-    
+    backgroundColor = UIColor(white: 0.95, alpha: 1.0)
     layer.cornerRadius = 12
     clipsToBounds = true
-    
+
     imageView = UIImageView()
     imageView.contentMode = .scaleAspectFit
-    imageView.backgroundColor = UIColor.lightGray
     addSubview(imageView)
-    
-    // Add fallback label if VisionKit not available
-    if !isVisionKitAvailable {
-      let label = UILabel()
-      label.text = "iOS < 17\nVisionKit not available"
-      label.textAlignment = .center
-      label.numberOfLines = 0
-      label.font = UIFont.systemFont(ofSize: 14)
-      label.textColor = UIColor.black
-      label.tag = 999 // Tag for easy identification
-      addSubview(label)
-    }
   }
-  
+
   override func layoutSubviews() {
     super.layoutSubviews()
     imageView.frame = bounds
-    
-    // Position fallback label if present
-    if let label = subviews.first(where: { $0.tag == 999 }) as? UILabel {
-      label.frame = CGRect(x: 0, y: bounds.height - 60, width: bounds.width, height: 50)
-    }
   }
-  
+
+  // Public function to load image from URL string (called from JS)
   func loadImage(from urlString: String) {
-    print("🔍 Loading image from: \(urlString)")
     guard let url = URL(string: urlString) else {
       onProcessingError(["error": "Invalid image URL"])
       return
     }
-    
-    // Load image asynchronously
+
     DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-      guard let data = try? Data(contentsOf: url),
-            let image = UIImage(data: data) else {
+      guard let data = try? Data(contentsOf: url), let uiImage = UIImage(data: data) else {
         DispatchQueue.main.async {
-          self?.onProcessingError(["error": "Failed to load image from URL"])
+          self?.onProcessingError(["error": "Failed to load image"])
         }
         return
       }
-      
+
       DispatchQueue.main.async {
-        self?.originalImage = image
-        self?.imageView.image = image
-        
-        // Process based on availability
-        if self?.isVisionKitAvailable == true {
-          if #available(iOS 17.0, *) {
-            self?.processBackgroundRemovalVisionKit(image: image)
-          }
+        guard let self = self else { return }
+        self.originalImage = uiImage
+        self.imageView.image = uiImage
+
+        if self.isVisionKitAvailable, #available(iOS 17.0, *) {
+          self.processBackgroundRemovalVisionKit(image: uiImage)
         } else {
-          // Fallback: return original image
-          self?.onProcessingComplete(["processedImageUri": urlString])
+          // fallback: return original image URI for older devices
+          self.onProcessingComplete(["processedImageUri": url.absoluteString])
         }
       }
     }
   }
-  
+
+  // MARK: - VisionKit processing (iOS 17+)
   @available(iOS 17.0, *)
   private func processBackgroundRemovalVisionKit(image: UIImage) {
-    print("🔍 Starting VisionKit background removal...")
-    
     guard let cgImage = image.cgImage else {
-      onProcessingError(["error": "Failed to convert image to CGImage"])
+      onProcessingError(["error": "Unable to get CGImage"])
       return
     }
-    
+
     let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-    
-    // Create VisionKit request for subject lifting (background removal)
+
     let request = VNGenerateForegroundInstanceMaskRequest { [weak self] request, error in
       DispatchQueue.main.async {
+        guard let self = self else { return }
+
         if let error = error {
-          self?.onProcessingError(["error": "VisionKit processing failed: \(error.localizedDescription)"])
+          self.onProcessingError(["error": "VisionKit failed: \(error.localizedDescription)"])
           return
         }
-        
-        guard let results = request.results as? [VNInstanceMaskObservation],
-              let result = results.first else {
-          self?.onProcessingError(["error": "No foreground mask found"])
+
+        guard let results = request.results as? [VNInstanceMaskObservation], 
+              let maskObservation = results.first else {
+          self.onProcessingError(["error": "No foreground mask found"])
           return
         }
-        
-        // Apply the mask to create image with transparent background
-        if let maskedImage = self?.applyMask(result, to: cgImage, handler: handler) {
-          self?.saveAndReturnProcessedImage(maskedImage)
-        } else {
-          self?.onProcessingError(["error": "Failed to apply background removal mask"])
+
+        // Apply the mask and crop tightly
+        guard let processedImage = self.applyMaskAndCrop(maskObservation, to: cgImage, using: handler) else {
+          self.onProcessingError(["error": "Failed to apply mask/crop"])
+          return
         }
+
+        // Update the display
+        self.imageView.image = processedImage
+        
+        // Save and return processed image
+        self.saveAndReturnProcessedImage(processedImage)
       }
     }
-    
-    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+
+    // Perform request on background queue
+    DispatchQueue.global(qos: .userInitiated).async {
       do {
         try handler.perform([request])
       } catch {
         DispatchQueue.main.async {
-          self?.onProcessingError(["error": "VisionKit processing failed: \(error.localizedDescription)"])
+          self.onProcessingError(["error": "VisionKit perform error: \(error.localizedDescription)"])
         }
       }
     }
   }
-  
+
   @available(iOS 17.0, *)
-  private func applyMask(_ mask: VNInstanceMaskObservation, to cgImage: CGImage, handler: VNImageRequestHandler) -> UIImage? {
+  private func applyMaskAndCrop(_ maskObservation: VNInstanceMaskObservation, to cgImage: CGImage, using handler: VNImageRequestHandler) -> UIImage? {
     do {
-      // Generate mask for all instances found in the image
-      let maskPixelBuffer = try mask.generateScaledMaskForImage(forInstances: mask.allInstances, from: handler)
-      
-      // Convert CVPixelBuffer to CGImage
-      guard let maskImage = pixelBufferToCGImage(maskPixelBuffer) else {
-        print("🔍 Failed to convert mask pixel buffer to CGImage")
+      let maskPixelBuffer = try maskObservation.generateScaledMaskForImage(forInstances: maskObservation.allInstances, from: handler)
+
+      guard let maskCGImage = pixelBufferToCGImage(maskPixelBuffer) else {
         return nil
       }
-      
-      // Create context for processing with alpha channel
-      let width = cgImage.width
-      let height = cgImage.height
-      
-      guard let context = CGContext(data: nil,
+
+      // Find bounding box from mask
+      guard let boundingBox = computeBoundingBox(from: maskCGImage) else {
+        return nil
+      }
+
+      // Crop original image and mask to bounding box
+      guard let croppedOriginal = cgImage.cropping(to: boundingBox),
+            let croppedMask = maskCGImage.cropping(to: boundingBox) else {
+        return nil
+      }
+
+      // Apply mask to cropped image
+      guard let maskedImage = applyMask(croppedMask, to: croppedOriginal) else {
+        return nil
+      }
+
+      return UIImage(cgImage: maskedImage, scale: UIScreen.main.scale, orientation: .up)
+
+    } catch {
+      return nil
+    }
+  }
+
+  private func pixelBufferToCGImage(_ pixelBuffer: CVPixelBuffer) -> CGImage? {
+    let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+    let context = CIContext(options: nil)
+    return context.createCGImage(ciImage, from: ciImage.extent)
+  }
+
+  private func computeBoundingBox(from mask: CGImage) -> CGRect? {
+    guard let provider = mask.dataProvider, let data = provider.data else {
+      return nil
+    }
+
+    let ptr = CFDataGetBytePtr(data)
+    let width = mask.width
+    let height = mask.height
+    let bytesPerRow = mask.bytesPerRow
+    let bytesPerPixel = bytesPerRow / width
+
+    var minX = width
+    var maxX = 0
+    var minY = height
+    var maxY = 0
+    var foundAny = false
+
+    for y in 0..<height {
+      for x in 0..<width {
+        let pixelIndex = y * bytesPerRow + x * bytesPerPixel
+        let value = ptr![pixelIndex]
+        if value > 128 {
+          foundAny = true
+          if x < minX { minX = x }
+          if x > maxX { maxX = x }
+          if y < minY { minY = y }
+          if y > maxY { maxY = y }
+        }
+      }
+    }
+
+    if !foundAny { return nil }
+
+    return CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)
+  }
+
+  private func applyMask(_ mask: CGImage, to image: CGImage) -> CGImage? {
+    let width = image.width
+    let height = image.height
+
+    guard let context = CGContext(data: nil,
                                   width: width,
                                   height: height,
                                   bitsPerComponent: 8,
                                   bytesPerRow: 0,
                                   space: CGColorSpaceCreateDeviceRGB(),
                                   bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue) else {
-        return nil
-      }
-      
-      // Clear the context with transparent background
-      context.clear(CGRect(x: 0, y: 0, width: width, height: height))
-      
-      // Set the mask as clipping mask
-      context.clip(to: CGRect(x: 0, y: 0, width: width, height: height), mask: maskImage)
-      
-      // Draw the original image (only the masked areas will be visible)
-      context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-      
-      guard let resultCGImage = context.makeImage() else {
-        return nil
-      }
-      
-      return UIImage(cgImage: resultCGImage)
-      
-    } catch {
-      print("🔍 Error applying mask: \(error.localizedDescription)")
       return nil
     }
+
+    context.clear(CGRect(x: 0, y: 0, width: width, height: height))
+    context.clip(to: CGRect(x: 0, y: 0, width: width, height: height), mask: mask)
+    context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+    return context.makeImage()
   }
-  
-  @available(iOS 17.0, *)
-  private func pixelBufferToCGImage(_ pixelBuffer: CVPixelBuffer) -> CGImage? {
-    let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-    let context = CIContext()
-    return context.createCGImage(ciImage, from: ciImage.extent)
-  }
-  
+
   private func saveAndReturnProcessedImage(_ image: UIImage) {
-    // Save to temporary directory
     let tempDir = NSTemporaryDirectory()
     let fileName = "processed_image_\(UUID().uuidString).png"
-    let filePath = tempDir + fileName
+    let filePath = (tempDir as NSString).appendingPathComponent(fileName)
     let fileURL = URL(fileURLWithPath: filePath)
-    
+
     guard let pngData = image.pngData() else {
       onProcessingError(["error": "Failed to convert processed image to PNG"])
       return
     }
-    
+
     do {
       try pngData.write(to: fileURL)
-      print("🔍 Processed image saved to: \(fileURL.absoluteString)")
       onProcessingComplete(["processedImageUri": fileURL.absoluteString])
     } catch {
       onProcessingError(["error": "Failed to save processed image: \(error.localizedDescription)"])

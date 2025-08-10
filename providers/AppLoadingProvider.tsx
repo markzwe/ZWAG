@@ -1,4 +1,5 @@
 import { api } from "@/convex/_generated/api";
+import { useAuth } from "@clerk/clerk-expo";
 import { useQuery } from "convex/react";
 import * as SplashScreen from "expo-splash-screen";
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -22,14 +23,21 @@ interface AppLoadingProviderProps {
 }
 
 export function AppLoadingProvider({ children }: AppLoadingProviderProps) {
+  const { isSignedIn } = useAuth();
   const [isAppReady, setIsAppReady] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("Initializing...");
 
-  // Query essential data that the app needs to function
-  const outfits = useQuery(api.outfits.getOutfits);
-  const imageUrls = useQuery(api.items.getPreviewImageByCategory);
-  const itemCounts = useQuery(api.items.countItemsByCategory);
+  // Query essential data that the app needs to function - only if user is signed in
+  const outfits = useQuery(api.outfits.getOutfits, isSignedIn ? {} : "skip");
+  const imageUrls = useQuery(
+    api.items.getPreviewImageByCategory,
+    isSignedIn ? {} : "skip"
+  );
+  const itemCounts = useQuery(
+    api.items.countItemsByCategory,
+    isSignedIn ? {} : "skip"
+  );
 
   useEffect(() => {
     async function prepareApp() {

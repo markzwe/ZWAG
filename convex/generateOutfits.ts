@@ -20,10 +20,6 @@ export const analyzeOutfit = action({
     weather: v.optional(v.string()),
   },
   handler: async (ctx, { items, occasion, weather, preferredItemsId }): Promise<string | null> => {
-    // Get items by calling the query from the items module
-    // NOTE: We don't filter items here - we pass ALL items to the AI
-    // The AI will prioritize preferred items based on the prompt instructions
-
     // Map items to match Item interface (rename _id to id)
     const mappedItems = items.map(item => ({
       id: item._id,
@@ -34,9 +30,12 @@ export const analyzeOutfit = action({
       style: item.style,
     }));
 
+    // Build a set of valid item IDs for validation
+    const validItemIds = new Set(mappedItems.map(item => item.id));
+
     // Construct the prompt for the AI model
     const prompt = generateOutfitPrompt(
-      mappedItems, // Pass ALL items, not just preferred ones
+      mappedItems,
       {
         occasion: occasion || "Casual",
         weather: weather || "Sunny",
@@ -54,10 +53,22 @@ export const analyzeOutfit = action({
       const response = await openai.chat.completions.create({
         model: "gpt-4.1-nano",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 150,
       });
 
-      return response.choices[0].message.content || null;
+      // Parse and validate the AI response
+      let aiOutfit;
+      try {
+        aiOutfit = JSON.parse(response.choices[0].message.content || '{}');
+      } catch {
+        return null;
+      }
+      // Filter out any IDs not in validItemIds
+      Object.keys(aiOutfit).forEach(key => {
+        if (!validItemIds.has(aiOutfit[key])) {
+          delete aiOutfit[key];
+        }
+      });
+      return JSON.stringify(aiOutfit);
     } catch (error) {
       console.error("Error generating outfit:", error);
       throw new Error("Failed to generate outfit");

@@ -1,27 +1,33 @@
-import * as React from "react";
-import {
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  StyleSheet,
-  Platform,
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-} from "react-native";
-import { useSignUp } from "@clerk/clerk-expo";
-import { useRouter } from "expo-router";
+import { COLORS } from "@/constants/theme";
+import { api } from "@/convex/_generated/api";
+import { useStylePreferences } from "@/providers/StylePreferencesProvider";
 import { useSSO } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
+import { useMutation } from "convex/react";
+import { useRouter } from "expo-router";
+import * as React from "react";
 import { useState } from "react";
-import VerifyEmail from "./verify-email";
-import { COLORS } from "@/constants/theme";
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+// COMMENTED OUT FOR V1 - SSO ONLY
+// import VerifyEmail from "./verify-email";
 
 export default function SignUpScreen() {
   const { startSSOFlow } = useSSO();
   const [isLoading, setIsLoading] = useState(false);
+  const { preferences, clearPreferences } = useStylePreferences();
+  const updateStylePreferences = useMutation(api.users.updateStylePreferences);
 
+  // COMMENTED OUT FOR V1 - SSO ONLY
+  /*
   const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
 
@@ -30,6 +36,63 @@ export default function SignUpScreen() {
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [showEmailForm, setShowEmailForm] = React.useState(false);
+
+  const handleEmailSignUp = () => {
+    setShowEmailForm(true);
+  };
+  */
+
+  const router = useRouter();
+
+  // Helper function to save style preferences after authentication
+  const saveStylePreferences = async () => {
+    if (preferences) {
+      try {
+        // Wait a moment for authentication to fully propagate
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        await updateStylePreferences({
+          stylePreferences: preferences.styles,
+          favoriteColors: preferences.colors,
+          height: preferences.height,
+          weight: preferences.weight,
+          fitPreference: preferences.fit,
+          avoidClothing: preferences.avoidClothing,
+          preferredOccasions: preferences.occasions,
+          preferredBrands: preferences.brands,
+          seasonalOutfits: preferences.seasonalOutfits,
+        });
+        clearPreferences(); // Clear from context after saving
+        console.log("Style preferences saved successfully");
+      } catch (error) {
+        console.error("Failed to save style preferences:", error);
+        // Retry once after another delay
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          await updateStylePreferences({
+            stylePreferences: preferences.styles,
+            favoriteColors: preferences.colors,
+            height: preferences.height,
+            weight: preferences.weight,
+            fitPreference: preferences.fit,
+            avoidClothing: preferences.avoidClothing,
+            preferredOccasions: preferences.occasions,
+            preferredBrands: preferences.brands,
+            seasonalOutfits: preferences.seasonalOutfits,
+          });
+          clearPreferences();
+          console.log("Style preferences saved successfully on retry");
+        } catch (retryError) {
+          console.error(
+            "Failed to save style preferences on retry:",
+            retryError
+          );
+          // Don't block the user flow if preferences fail to save
+        }
+      }
+    }
+  };
 
   // Google sign up handler using startSSOFlow
   const handleGoogleSignIn = async () => {
@@ -40,7 +103,8 @@ export default function SignUpScreen() {
       });
       if (setActive && createdSessionId) {
         await setActive({ session: createdSessionId });
-        router.replace("/(tabs)");
+        await saveStylePreferences(); // Save preferences after authentication
+        router.push("/onBordingScreens/payWall");
       }
     } catch (error) {
       console.error("Google sign-in failed:", error);
@@ -58,7 +122,8 @@ export default function SignUpScreen() {
       });
       if (setActive && createdSessionId) {
         await setActive({ session: createdSessionId });
-        router.replace("/(tabs)");
+        await saveStylePreferences(); // Save preferences after authentication
+        router.push("/onBordingScreens/payWall");
       }
     } catch (error) {
       console.error("Apple sign-in failed:", error);
@@ -67,6 +132,8 @@ export default function SignUpScreen() {
     }
   };
 
+  // COMMENTED OUT FOR V1 - SSO ONLY
+  /*
   // Handle submission of sign-up form
   const onSignUpPress = async () => {
     if (!emailAddress || !password) {
@@ -105,6 +172,7 @@ export default function SignUpScreen() {
       />
     );
   }
+  */
 
   // Handle submission of verification form
   // const onVerifyPress = async () => {
@@ -147,156 +215,145 @@ export default function SignUpScreen() {
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={64}>
-        <Text style={styles.title}>Sign up</Text>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("@/assets/images/ZWAG-logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        <Text style={styles.title}>Sign Up</Text>
+        <Text style={styles.subtitle}>
+          Create your account to start styling
+        </Text>
 
         {/* Social Sign Up Buttons */}
-        {/* Google Login Button */}
-        <TouchableOpacity
-          style={{
-            backgroundColor: COLORS.pureWhite,
-            borderRadius: 20,
-            paddingVertical: 18,
-            paddingHorizontal: 24,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 16,
-            shadowColor: COLORS.black,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.2,
-            shadowRadius: 16,
-            elevation: 12,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            transform: [{ scale: isLoading ? 0.98 : 1 }],
-          }}
-          activeOpacity={0.8}
-          onPress={handleGoogleSignIn}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator size="small" color={COLORS.mediumGray} />
-          ) : (
-            <View
-              style={{
-                backgroundColor: COLORS.pureWhite,
-                borderRadius: 12,
-                padding: 8,
-                marginRight: 16,
-                shadowColor: COLORS.black,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 3,
-              }}
-            >
-              <Ionicons name="logo-google" size={20} color="#4285F4" />
-            </View>
-          )}
-          <Text
-            style={{
-              fontSize: 16,
-              fontWeight: "600",
-              color: COLORS.textPrimary,
-              letterSpacing: 0.5,
-            }}
-          >
-            {isLoading ? "  Signing in..." : "Continue with Google"}
-          </Text>
-        </TouchableOpacity>
-
-        {/* APPLE SIGN UP */}
-        {Platform.OS === "ios" && (
+        <View style={styles.buttonsContainer}>
+          {/* Google Login Button */}
           <TouchableOpacity
-            style={{
-              backgroundColor: COLORS.black,
-              borderRadius: 20,
-              paddingVertical: 18,
-              paddingHorizontal: 24,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 16,
-              shadowColor: COLORS.black,
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.2,
-              shadowRadius: 16,
-              elevation: 12,
-              borderWidth: 1,
-              borderColor: COLORS.border,
-              transform: [{ scale: isLoading ? 0.98 : 1 }],
-            }}
+            style={[styles.socialButton, styles.googleButton]}
             activeOpacity={0.8}
-            onPress={handleAppleSignIn}
+            onPress={handleGoogleSignIn}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color={COLORS.mediumGray} />
             ) : (
-              <View
-                style={{
-                  backgroundColor: COLORS.black,
-                  borderRadius: 12,
-                  padding: 8,
-                  marginRight: 16,
-                  shadowColor: COLORS.black,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 3,
-                }}
-              >
+              <>
                 <Ionicons
-                  name="logo-apple"
+                  name="logo-google"
                   size={20}
-                  color={COLORS.pureWhite}
+                  color="#4285F4"
+                  style={styles.buttonIcon}
                 />
-              </View>
+                <Text style={[styles.buttonText, styles.googleText]}>
+                  Continue with Google
+                </Text>
+              </>
             )}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "600",
-                color: COLORS.pureWhite,
-                letterSpacing: 0.5,
-              }}
-            >
-              {isLoading ? "  Signing in..." : "Continue with Apple"}
-            </Text>
           </TouchableOpacity>
+
+          {/* APPLE SIGN UP */}
+          {Platform.OS === "ios" && (
+            <TouchableOpacity
+              style={[styles.socialButton, styles.appleButton]}
+              activeOpacity={0.8}
+              onPress={handleAppleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color={COLORS.mediumGray} />
+              ) : (
+                <>
+                  <Ionicons
+                    name="logo-apple"
+                    size={20}
+                    color={COLORS.pureWhite}
+                    style={styles.buttonIcon}
+                  />
+                  <Text style={[styles.buttonText, styles.appleText]}>
+                    Continue with Apple
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* COMMENTED OUT FOR V1 - SSO ONLY */}
+          {/* Email Sign Up Button */}
+          {/*
+          {!showEmailForm && (
+            <TouchableOpacity
+              style={[styles.socialButton, styles.emailButton]}
+              activeOpacity={0.8}
+              onPress={handleEmailSignUp}
+            >
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color={COLORS.textPrimary}
+                style={styles.buttonIcon}
+              />
+              <Text style={[styles.buttonText, styles.emailText]}>
+                Sign up with Email
+              </Text>
+            </TouchableOpacity>
+          )}
+          */}
+        </View>
+
+        {/* COMMENTED OUT FOR V1 - SSO ONLY */}
+        {/* Email Sign Up Form - Only show when button is pressed */}
+        {/*
+        {showEmailForm && (
+          <>
+            <TextInput
+              autoCapitalize="none"
+              value={emailAddress}
+              placeholder="Enter email"
+              onChangeText={setEmailAddress}
+              style={styles.input}
+              keyboardType="email-address"
+            />
+            <TextInput
+              value={password}
+              placeholder="Enter password"
+              secureTextEntry={true}
+              onChangeText={setPassword}
+              style={styles.input}
+            />
+            <TouchableOpacity style={styles.button} onPress={onSignUpPress}>
+              <Text
+                style={[
+                  styles.buttonText,
+                  { color: COLORS.pureWhite, fontWeight: "bold" },
+                ]}
+              >
+                {loading ? "Signing up..." : "Sign Up"}
+              </Text>
+            </TouchableOpacity>
+          </>
         )}
-
-        <Text style={styles.orText}>or sign up with email</Text>
-
-        {/* Email Sign Up */}
-        <TextInput
-          autoCapitalize="none"
-          value={emailAddress}
-          placeholder="Enter email"
-          onChangeText={setEmailAddress}
-          style={styles.input}
-          keyboardType="email-address"
-        />
-        <TextInput
-          value={password}
-          placeholder="Enter password"
-          secureTextEntry={true}
-          onChangeText={setPassword}
-          style={styles.input}
-        />
-        <TouchableOpacity style={styles.button} onPress={onSignUpPress}>
-          <Text style={styles.buttonText}>
-            {loading ? "Signing up..." : "Sign Up"}
-          </Text>
-        </TouchableOpacity>
+        */}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Already have an account?</Text>
           <Text
             style={styles.linkText}
-            onPress={() => router.replace("/(auth)/sign-in")}
+            onPress={() => router.push("/onBordingScreens/welcome")}
           >
             Log in
+          </Text>
+        </View>
+
+        {/* Terms and Conditions */}
+        <View style={styles.termsFooter}>
+          <Text style={styles.termsText}>
+            By continuing you agree to ZWAG's{" "}
+            <Text style={styles.termsLink}>Terms and Conditions</Text> and{" "}
+            <Text style={styles.termsLink}>Privacy Policy</Text>
           </Text>
         </View>
       </KeyboardAvoidingView>
@@ -311,20 +368,70 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: COLORS.pureWhite,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
+  logoContainer: {
+    alignItems: "center",
     marginBottom: 32,
+  },
+  logo: {
+    width: 140,
+    height: 70,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    marginBottom: 40,
     textAlign: "center",
+    color: COLORS.textPrimary,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: 32,
+    fontWeight: "400",
+  },
+  buttonsContainer: {
+    marginBottom: 24,
+  },
+  googleButton: {
+    backgroundColor: COLORS.pureWhite,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  appleButton: {
+    backgroundColor: COLORS.black,
+  },
+  emailButton: {
+    backgroundColor: COLORS.pureWhite,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  buttonIcon: {
+    marginRight: 12,
+  },
+  googleText: {
+    color: COLORS.textPrimary,
+  },
+  appleText: {
+    color: COLORS.pureWhite,
+  },
+  emailText: {
     color: COLORS.textPrimary,
   },
   socialButton: {
-    padding: 14,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: "center",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
+    marginBottom: 14,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   socialButtonText: {
     fontSize: 16,
@@ -353,9 +460,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   buttonText: {
-    color: COLORS.pureWhite,
-    fontWeight: "bold",
     fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
   footer: {
     flexDirection: "row",
@@ -371,5 +478,20 @@ const styles = StyleSheet.create({
     color: COLORS.darkGray,
     marginLeft: 6,
     fontWeight: "bold",
+  },
+  termsFooter: {
+    alignItems: "center",
+    marginTop: 16,
+    paddingHorizontal: 12,
+  },
+  termsText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    lineHeight: 16,
+  },
+  termsLink: {
+    color: COLORS.textPrimary,
+    fontWeight: "500",
   },
 });

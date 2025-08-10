@@ -1,5 +1,4 @@
 import { COLORS, SPACING } from "@/constants/theme";
-import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -29,11 +28,37 @@ export default function VisionKitRemoval() {
         console.log("⚠️ Timeout: Native events didn't fire, stopping loading");
         setLoading(false);
         setError("Processing took too long - using original image");
+        // Auto-navigate with original image on timeout
+        router.push({
+          pathname: "/screens/closet/addedItem",
+          params: {
+            processedImageUri: imageUri, // Use original image as fallback
+          },
+        });
       }
     }, 10000); // 10 second timeout
 
     return () => clearTimeout(timeout);
-  }, [loading]);
+  }, [loading, imageUri]);
+
+  // Auto-navigate when processed image is ready
+  useEffect(() => {
+    if (processedImageUri && !loading) {
+      console.log(
+        "🚀 Auto-navigating with processed image:",
+        processedImageUri
+      );
+      // Small delay to show success state briefly
+      setTimeout(() => {
+        router.push({
+          pathname: "/screens/closet/addedItem",
+          params: {
+            processedImageUri: processedImageUri,
+          },
+        });
+      }, 500); // 500ms delay to show completion
+    }
+  }, [processedImageUri, loading]);
 
   if (!imageUri) {
     return (
@@ -47,11 +72,10 @@ export default function VisionKitRemoval() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>VisionKit Background Removal</Text>
-
+      {/* VisionKit processing view - hidden but functional */}
       <VisionBgRemoverView
         imageUri={imageUri}
-        style={styles.visionKitView}
+        style={styles.hiddenVisionKitView}
         onProcessingComplete={(event: {
           nativeEvent: { processedImageUri: string };
         }) => {
@@ -59,60 +83,56 @@ export default function VisionKitRemoval() {
           setProcessedImageUri(event.nativeEvent.processedImageUri);
           setLoading(false);
           setError(null);
+          // Note: Auto-navigation handled by useEffect above
         }}
         onProcessingError={(event: { nativeEvent: { error: string } }) => {
           console.log("❌ Processing error:", event.nativeEvent);
           setError(event.nativeEvent.error);
           setLoading(false);
+          // Auto-navigate with original image on error
+          setTimeout(() => {
+            router.push({
+              pathname: "/screens/closet/addedItem",
+              params: {
+                processedImageUri: imageUri, // Use original image as fallback
+              },
+            });
+          }, 1000); // 1 second delay to show error briefly
         }}
       />
 
-      {/* Loading indicator while processing */}
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.textPrimary} />
-          <Text style={styles.loadingText}>
-            {processedImageUri
+      {/* Clean loading screen */}
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={COLORS.textPrimary} />
+        <Text style={styles.loadingTitle}>
+          {error
+            ? "Processing failed, proceeding..."
+            : processedImageUri
               ? "Background removal complete!"
-              : "Processing background removal..."}
-          </Text>
-        </View>
-      )}
-
-      {/* Fallback until native module is recreated */}
-      {/* <View style={styles.visionKitView}>
-        <Image
-          source={{ uri: processedImageUri || imageUri }}
-          style={{ flex: 1, borderRadius: 12 }}
-          resizeMode="contain"
-        />
-        <Text style={styles.loadingText}>
-          {processedImageUri
-            ? "Background removed successfully!"
-            : "Native VisionKit module temporarily unavailable - showing original image"}
+              : "Removing background..."}
         </Text>
-      </View> */}
+        <Text style={styles.loadingSubtitle}>
+          {error ? "Using original image" : "Please wait a moment"}
+        </Text>
+      </View>
 
-      {/* Error display */}
-      {error && <Text style={styles.errorText}>{error}</Text>}
-
-      {/* Continue button */}
-      <TouchableOpacity
-        style={[styles.primaryActionButton, loading && styles.disabledButton]}
-        onPress={() =>
-          router.push({
-            pathname: "/screens/closet/addedItem",
-            params: {
-              processedImageUri: processedImageUri ?? imageUri, // Use processed image if available, fallback to original
-            },
-          })
-        }
-        disabled={loading}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.primaryActionButtonText}>Continue</Text>
-        <Ionicons name="arrow-forward" size={20} color={COLORS.pureWhite} />
-      </TouchableOpacity>
+      {/* Error display - only if there's an error and manual intervention needed */}
+      {error && (
+        <TouchableOpacity
+          style={styles.errorButton}
+          onPress={() =>
+            router.push({
+              pathname: "/screens/closet/addedItem",
+              params: {
+                processedImageUri: imageUri, // Use original image as fallback
+              },
+            })
+          }
+          activeOpacity={0.8}
+        >
+          <Text style={styles.errorButtonText}>Continue Anyway</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -120,10 +140,46 @@ export default function VisionKitRemoval() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primaryBackground, // Changed from red to proper background
-    padding: SPACING.md,
-    paddingTop: 50,
+    backgroundColor: COLORS.primaryBackground,
+    justifyContent: "center",
+    alignItems: "center",
   },
+  hiddenVisionKitView: {
+    position: "absolute",
+    width: 1,
+    height: 1,
+    opacity: 0,
+  },
+  loadingScreen: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginTop: SPACING.lg,
+    textAlign: "center",
+  },
+  loadingSubtitle: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
+    textAlign: "center",
+  },
+  errorButton: {
+    backgroundColor: COLORS.textPrimary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 8,
+    marginTop: SPACING.xl,
+  },
+  errorButtonText: {
+    color: COLORS.pureWhite,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  // Keep old styles for fallback compatibility
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -147,9 +203,9 @@ const styles = StyleSheet.create({
   visionKitView: {
     flex: 1,
     borderRadius: 12,
-    backgroundColor: "#f0f0f0", // Add background color to see if view is rendered
+    backgroundColor: "#f0f0f0",
     borderWidth: 2,
-    borderColor: "#ccc", // Add border to see boundaries
+    borderColor: "#ccc",
   },
   errorText: {
     fontSize: 16,

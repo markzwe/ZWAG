@@ -98,7 +98,40 @@ export default function Menu() {
       {
         text: "Sign Out",
         style: "destructive",
-        onPress: () => signOut(),
+        onPress: () =>
+          signOut()
+            .then(() => router.push("/"))
+            .catch((error) => {
+              console.error("Sign out error:", error);
+              Alert.alert("Error", "Failed to sign out. Please try again.");
+            }),
+      },
+    ]);
+  };
+  const handleDeleteAccount = async () => {
+    Alert.alert("Delete Account", "Are you sure you want to delete your account?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+
+          const userId = user?.id;
+          try {
+            if (!userId) {
+              throw new Error("User ID not found");
+            }
+           user?.delete(); // Use Clerk's delete method
+           router.push("/onBordingScreens/welcome"); 
+          } catch (error) {
+            console.error("Error deleting account:", error);
+            Alert.alert("Error", "Failed to delete account. Please try again.");
+            return;
+          }
+
+          console.log("Account deletion logic goes here");
+          Alert.alert("Account Deleted", "Your account has been deleted.");
+        },
       },
     ]);
   };
@@ -111,13 +144,7 @@ export default function Menu() {
           icon: "color-palette-outline" as const,
           title: "Style Preferences",
           subtitle: "Customize your fashion style",
-          onPress: () => console.log("Style preferences pressed"),
-        },
-        {
-          icon: "analytics-outline" as const,
-          title: "Outfit History",
-          subtitle: "View your generated outfits",
-          onPress: () => console.log("Outfit history pressed"),
+          onPress: () => router.push("/screens/menuScreens/stylePreferences"),
         },
       ],
     },
@@ -208,45 +235,59 @@ export default function Menu() {
             danger={true}
           />
         </View>
-      <View style = {{
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: COLORS.primaryBackground,
-        borderTopColor: COLORS.divider,
-        gap: SPACING.sm-3,
-        }}>
-        
-        <Image
-          source={require("@/assets/images/ZWAG.png")}
-          style={{ width: 40, height: 40, borderRadius: 8, opacity: 0.9 }}
-          contentFit="contain"
-          
-        />
-        <Text style = {{color: COLORS.darkGray}}> Version: 1.0.0</Text>
-        <View style={{ flexDirection: "row", gap: SPACING.md }}>
-        <Ionicons
-          name="logo-instagram"
-          size={24}
-          color={COLORS.textPrimary}
-          onPress={async () => await Linking.openURL('https://www.instagram.com/zwag.app/')}
-        />
-        <Ionicons
-          name="logo-tiktok"
-          size={24}
-          color={COLORS.textPrimary}
-          onPress={async () => await Linking.openURL('https://www.tiktok.com/@zwag.app')}
-        />
-        <Ionicons
-          name="earth"
-          size={24}
-          color={COLORS.textPrimary}
-          onPress={async () => await Linking.openURL('https://www.zwag.app')}
-        />
+        <View style={styles.DeleteSection}>
+          <MenuItem
+            icon="trash-outline"
+            title="Delete Account"
+            onPress={handleDeleteAccount}
+            showArrow={false}
+            danger={true}
+          />
         </View>
-      </View>
+        <View
+          style={{
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: COLORS.primaryBackground,
+            borderTopColor: COLORS.divider,
+            gap: SPACING.sm - 3,
+          }}
+        >
+          <Image
+            source={require("@/assets/images/ZWAG.png")}
+            style={{ width: 40, height: 40, borderRadius: 8, opacity: 0.9 }}
+            contentFit="contain"
+          />
+          <Text style={{ color: COLORS.darkGray }}> Version: 1.0.0</Text>
+          <View style={{ flexDirection: "row", gap: SPACING.md }}>
+            <Ionicons
+              name="logo-instagram"
+              size={24}
+              color={COLORS.textPrimary}
+              onPress={async () =>
+                await Linking.openURL("https://www.instagram.com/zwag.app/")
+              }
+            />
+            <Ionicons
+              name="logo-tiktok"
+              size={24}
+              color={COLORS.textPrimary}
+              onPress={async () =>
+                await Linking.openURL("https://www.tiktok.com/@zwag.app")
+              }
+            />
+            <Ionicons
+              name="earth"
+              size={24}
+              color={COLORS.textPrimary}
+              onPress={async () =>
+                await Linking.openURL("https://www.zwag.app")
+              }
+            />
+          </View>
+        </View>
       </Animated.View>
-
     </SafeAreaView>
   );
 }
@@ -376,6 +417,13 @@ const styles = StyleSheet.create({
   signOutSection: {
     marginTop: SPACING.lg,
     marginBottom: SPACING.sm,
+    backgroundColor: COLORS.pureWhite,
+    marginHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.sm,
+  },
+    DeleteSection: {
+    marginBottom: SPACING.md,
     backgroundColor: COLORS.pureWhite,
     marginHorizontal: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,

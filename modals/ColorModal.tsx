@@ -1,3 +1,4 @@
+import { COLOR_OPTIONS } from "@/constants/preferences";
 import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
@@ -26,30 +27,7 @@ export default function ColorModal({
 }: ColorModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const colorOptions = [
-    { name: "Black", hex: "#000000" },
-    { name: "White", hex: "#FFFFFF" },
-    { name: "Gray", hex: "#808080" },
-    { name: "Navy", hex: "#1B2951" },
-    { name: "Blue", hex: "#4A90E2" },
-    { name: "Red", hex: "#E74C3C" },
-    { name: "Green", hex: "#27AE60" },
-    { name: "Brown", hex: "#8B4513" },
-    { name: "Beige", hex: "#F5F5DC" },
-    { name: "Pink", hex: "#FF69B4" },
-    { name: "Purple", hex: "#9B59B6" },
-    { name: "Yellow", hex: "#F1C40F" },
-    { name: "Orange", hex: "#FF8C00" },
-    { name: "Burgundy", hex: "#800020" },
-    { name: "Olive", hex: "#808000" },
-    { name: "Cream", hex: "#FFF8DC" },
-    { name: "Khaki", hex: "#C3B091" },
-    { name: "Maroon", hex: "#800000" },
-    { name: "Teal", hex: "#008080" },
-    { name: "Coral", hex: "#FF7F50" },
-  ];
-
-  const filteredColors = colorOptions.filter((color) =>
+  const filteredColors = COLOR_OPTIONS.filter((color) =>
     color.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -133,7 +111,7 @@ export default function ColorModal({
                 <View
                   style={[
                     styles.colorSwatch,
-                    { backgroundColor: colorOption.hex },
+                    { backgroundColor: colorOption.color },
                     colorOption.name === "White" && styles.whiteBorder,
                   ]}
                 />
@@ -145,7 +123,6 @@ export default function ColorModal({
                 >
                   {colorOption.name}
                 </Text>
-             
               </TouchableOpacity>
             );
           })}

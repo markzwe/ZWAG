@@ -1,3 +1,4 @@
+import { brands } from "@/constants/brands"; // Assuming you have a list of brands in this file
 import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -10,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { brands } from "@/assets/data/brands"; // Assuming you have a list of brands in this file
 
 type BrandModalProps = {
   visible: boolean;
@@ -36,8 +36,6 @@ export default function BrandModal({
     const capitalized = capitalizeWords(text);
     setSearch(capitalized);
   };
-
-  
 
   return (
     <Modal
