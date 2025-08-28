@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as generateOutfits from "../generateOutfits.js";
 import type * as http from "../http.js";
+import type * as inviteCodes from "../inviteCodes.js";
 import type * as items from "../items.js";
 import type * as outfits from "../outfits.js";
 import type * as users from "../users.js";
@@ -30,6 +31,7 @@ import type * as users from "../users.js";
 declare const fullApi: ApiFromModules<{
   generateOutfits: typeof generateOutfits;
   http: typeof http;
+  inviteCodes: typeof inviteCodes;
   items: typeof items;
   outfits: typeof outfits;
   users: typeof users;

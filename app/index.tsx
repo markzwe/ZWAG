@@ -17,8 +17,10 @@ export default function Index() {
 
   // // Redirect based on authentication status
   if (isSignedIn && user?.unsafeMetadata?.hasCompletedOnboarding) {
+    console.log("User has completed onboarding, redirecting to main app.");
     return <Redirect href="/(tabs)" />;
   } else {
+    console.log("User not signed in or onboarding incomplete, redirecting to welcome.");
     return <Redirect href="/onBordingScreens/welcome" />;
   }
 }

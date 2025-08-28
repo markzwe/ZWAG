@@ -42,7 +42,53 @@ export default function ItemViewDetail() {
   const [brand, setBrand] = useState("");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showBrandModal, setShowBrandModal] = useState(false);
-    const [showColorModal, setShowColorModal] = useState<boolean>(false);
+  const [showColorModal, setShowColorModal] = useState<boolean>(false);
+  const [isUpdated, setIsUpdated] = useState<boolean> (false);
+  const [initialItem, setInitialItem] = useState<null | {
+    category: string;
+    subcategory: string;
+    style: string[];
+    color: string;
+    caption: string;
+    brand: string;
+  }>(null);
+
+  useEffect(() => {
+    if (item) {
+      const normalized = {
+        category: item.category,
+        subcategory: item.subcategory,
+        style: item.style || [],
+        color: item.color ?? "",
+        caption: item.caption ?? "",
+        brand: item.brand ?? "",
+      };
+  
+      setCategory(normalized.category);
+      setSubcategory(normalized.subcategory);
+      setStyle(normalized.style);
+      setColor(normalized.color);
+      setCaption(normalized.caption);
+      setBrand(normalized.brand);
+  
+      setInitialItem(normalized); // save initial state
+    }
+  }, [item]);
+
+  // Whenever fields change, re-check against initialItem
+useEffect(() => {
+  if (!initialItem) return;
+
+  const hasChanged =
+    category !== initialItem.category ||
+    subcategory !== initialItem.subcategory ||
+    color !== initialItem.color ||
+    caption !== initialItem.caption ||
+    brand !== initialItem.brand ||
+    JSON.stringify(style) !== JSON.stringify(initialItem.style);
+
+  setIsUpdated(hasChanged);
+}, [category, subcategory, style, color, caption, brand, initialItem]);
   
 
   const styleOptions = [
@@ -54,16 +100,6 @@ export default function ItemViewDetail() {
     "Streetwear",
   ];
 
-  useEffect(() => {
-    if (item) {
-      setCategory(item.category);
-      setSubcategory(item.subcategory);
-      setStyle(item.style || []);
-      setColor(item.color ?? "");
-      setCaption(item.caption);
-      setBrand(item.brand ?? "");
-    }
-  }, [item]);
 
   const toggleStyle = (option: string) => {
     setStyle((prev) =>
@@ -82,6 +118,11 @@ export default function ItemViewDetail() {
   }
 
   const handleSave = async () => {
+    if (!isUpdated) {
+      router.back(); // nothing changed → just go back
+      return;
+    }
+  
     await updateItem({
       itemId: item._id,
       category,
@@ -89,8 +130,15 @@ export default function ItemViewDetail() {
       style,
       color,
       caption,
+      brand,
     });
+  
     Alert.alert("Success", "Item updated successfully");
+  
+    // update initial snapshot so isUpdated resets
+    setInitialItem({ category, subcategory, style, color, caption, brand });
+    setIsUpdated(false);
+    router.back()
   };
 
   const handleDelete = () => {
@@ -103,18 +151,15 @@ export default function ItemViewDetail() {
           try {
             await deleteItem({ itemId: item._id });
             Alert.alert("Success", "Item deleted successfully");
-            router.back();
           } catch (err) {
             Alert.alert("Error", "Failed to delete item");
           }
         },
       },
     ]);
-  };
-  const handleGoBackandSave = () => {
     router.back();
-    handleSave();
-  }
+  };
+
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
@@ -122,7 +167,7 @@ export default function ItemViewDetail() {
       <View style={[styles.header, { paddingTop: insets.top}]}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={handleGoBackandSave}
+          onPress={handleSave}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.offWhite} />
         </TouchableOpacity>

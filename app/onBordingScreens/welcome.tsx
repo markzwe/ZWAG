@@ -1,4 +1,6 @@
 import { BORDER_RADIUS, COLORS, SPACING } from "@/constants/theme";
+import PrivacyModal from "@/modals/PrivacyModal";
+import TermsModal from "@/modals/TermsModal";
 import { useAuth, useSSO, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -25,6 +27,8 @@ export default function Welcome() {
   const { startSSOFlow } = useSSO();
   const [isSignInModalVisible, setIsSignInModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
   // Modal handlers
   const handleOpenSignIn = () => {
@@ -35,19 +39,22 @@ export default function Welcome() {
     setIsSignInModalVisible(false);
   };
 
- useEffect(() => {
-  if (!isLoaded || !userLoaded || !isSignedIn) return;
+  useEffect(() => {
+    if (!isLoaded || !userLoaded || !isSignedIn) return;
 
-  // For new users (hasCompletedOnboarding is undefined) or users who haven't completed onboarding
-  if (user?.unsafeMetadata?.hasCompletedOnboarding !== true && isSignedIn) {
-    router.push("/onBordingScreens/styleQuestionnaire");
-    handleCloseSignIn();
-  } 
-  // Only navigate to tabs if explicitly marked as completed
-  else if (user?.unsafeMetadata?.hasCompletedOnboarding === true && isSignedIn) {
-    router.push("/(tabs)");
-  }
-}, [isLoaded, userLoaded, isSignedIn, user]);
+    // For new users (hasCompletedOnboarding is undefined) or users who haven't completed onboarding
+    if (user?.unsafeMetadata?.hasCompletedOnboarding !== true && isSignedIn) {
+      router.push("/onBordingScreens/styleQuestionnaire");
+      handleCloseSignIn();
+    }
+    // Only navigate to tabs if explicitly marked as completed
+    else if (
+      user?.unsafeMetadata?.hasCompletedOnboarding === true &&
+      isSignedIn
+    ) {
+      router.push("/(tabs)");
+    }
+  }, [isLoaded, userLoaded, isSignedIn, user]);
 
   const handleSocialSSO = async (strategy: "oauth_google" | "oauth_apple") => {
     setIsLoading(true);
@@ -67,13 +74,19 @@ export default function Welcome() {
   };
 
   if (isLoading) {
-    return(
-      <View style={{ flex: 1,justifyContent: "center", alignItems: "center", backgroundColor: 'rgba(0, 0, 0, 0.64)'}}>
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "rgba(0, 0, 0, 0.64)",
+        }}
+      >
         <ActivityIndicator size="large" color={COLORS.pureWhite} />
       </View>
-    )
+    );
   }
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,7 +140,7 @@ export default function Welcome() {
           </Text>
         </TouchableOpacity>
       </View>
-    
+
       <Modal
         visible={isSignInModalVisible}
         transparent={true}
@@ -185,14 +198,26 @@ export default function Welcome() {
                 <View style={styles.termsFooter}>
                   <Text style={styles.termsText}>
                     By continuing you agree to ZWAG’s{" "}
-                    <Text style={styles.termsLink}>Terms</Text> and{" "}
-                    <Text style={styles.termsLink}>Privacy Policy</Text>
+                    <Text style={styles.termsLink} onPress = { () => setTermsModalVisible(true)}>Terms of Use</Text> and{" "}
+                    <Text style={styles.termsLink} onPress = { () => setPrivacyModalVisible(true)}>Privacy Policy</Text>
                   </Text>
                 </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
+        <PrivacyModal
+          visible={privacyModalVisible}
+          onClose={() => {
+            setPrivacyModalVisible(false);
+          }}
+        />
+        <TermsModal
+          visible={termsModalVisible}
+          onClose={() => {
+            setTermsModalVisible(false);
+          }}
+        />
       </Modal>
     </SafeAreaView>
   );

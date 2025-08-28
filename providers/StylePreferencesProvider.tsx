@@ -10,6 +10,7 @@ interface StylePreferences {
   seasonalOutfits: boolean;
   height: string;
   weight: string;
+  referralCode: string;
 }
 
 interface StylePreferencesContextType {

@@ -1,7 +1,7 @@
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { getAuthenticatedUser } from "./users";
-import { Id } from "./_generated/dataModel";
 
 export const generatedUploadUrl = mutation(async(ctx) => {
     const identity = await ctx.auth.getUserIdentity();

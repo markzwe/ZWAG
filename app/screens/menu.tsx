@@ -5,6 +5,8 @@ import {
   SHADOWS,
   SPACING,
 } from "@/constants/theme";
+import PrivacyModal from "@/modals/PrivacyModal";
+import TermsModal from "@/modals/TermsModal";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -76,6 +78,9 @@ export default function Menu() {
   const slideAnim = useRef(new Animated.Value(width)).current; // Start from right (off-screen)
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const [privacyModalVisible, setPrivacyModalVisible] = React.useState(false);
+  const [termsModalVisible, setTermsModalVisible] = React.useState(false);
+
   useEffect(() => {
     // Slide in from right to left animation
     Animated.parallel([
@@ -109,31 +114,37 @@ export default function Menu() {
     ]);
   };
   const handleDeleteAccount = async () => {
-    Alert.alert("Delete Account", "Are you sure you want to delete your account?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-
-          const userId = user?.id;
-          try {
-            if (!userId) {
-              throw new Error("User ID not found");
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            const userId = user?.id;
+            try {
+              if (!userId) {
+                throw new Error("User ID not found");
+              }
+              user?.delete(); // Use Clerk's delete method
+              router.push("/onBordingScreens/welcome");
+            } catch (error) {
+              console.error("Error deleting account:", error);
+              Alert.alert(
+                "Error",
+                "Failed to delete account. Please try again."
+              );
+              return;
             }
-           user?.delete(); // Use Clerk's delete method
-           router.push("/onBordingScreens/welcome"); 
-          } catch (error) {
-            console.error("Error deleting account:", error);
-            Alert.alert("Error", "Failed to delete account. Please try again.");
-            return;
-          }
 
-          console.log("Account deletion logic goes here");
-          Alert.alert("Account Deleted", "Your account has been deleted.");
+            console.log("Account deletion logic goes here");
+            Alert.alert("Account Deleted", "Your account has been deleted.");
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const menuSections = [
@@ -151,24 +162,37 @@ export default function Menu() {
     {
       title: "App Settings",
       items: [
+        // {
+        //   icon: "notifications-outline" as const,
+        //   title: "Notifications",
+        //   subtitle: "Outfit suggestions and updates",
+        //   onPress: () => console.log("Notifications pressed"),
+        // },
         {
-          icon: "notifications-outline" as const,
-          title: "Notifications",
-          subtitle: "Outfit suggestions and updates",
-          onPress: () => console.log("Notifications pressed"),
+          icon: "lock-closed-outline" as const,
+          title: "Privacy & Security",
+          subtitle: "Manage your data and security settings",
+          onPress: () => setPrivacyModalVisible(true),
         },
         {
-          icon: "settings-outline" as const,
-          title: "Preferences",
-          subtitle: "App settings and customization",
-          onPress: () => console.log("Settings pressed"),
+          icon: "document-text-outline" as const,
+          title: "Terms of Service",
+          subtitle: "Read our terms and policies",
+          onPress: () => setTermsModalVisible(true),
         },
-        {
-          icon: "help-circle-outline" as const,
-          title: "Help & Support",
-          subtitle: "Get help and contact support",
-          onPress: () => console.log("Help pressed"),
-        },
+
+        // {
+        //   icon: "settings-outline" as const,
+        //   title: "Preferences",
+        //   subtitle: "App settings and customization",
+        //   onPress: () => console.log("Settings pressed"),
+        // },
+        // {
+        //   icon: "help-circle-outline" as const,
+        //   title: "Help & Support",
+        //   subtitle: "Get help and contact support",
+        //   onPress: () => console.log("Help pressed"),
+        // },
       ],
     },
   ];
@@ -201,10 +225,7 @@ export default function Menu() {
             <Text style={styles.profileEmail}>
               {user?.primaryEmailAddress?.emailAddress || "Not signed in"}
             </Text>
-          </View>
-          <TouchableOpacity style={styles.editProfileButton}>
-            <Ionicons name="pencil" size={20} color={COLORS.textPrimary} />
-          </TouchableOpacity>
+          </View> 
         </View>
 
         {/* Menu Sections */}
@@ -287,6 +308,16 @@ export default function Menu() {
             />
           </View>
         </View>
+        <PrivacyModal
+          visible={privacyModalVisible}
+          onClose={() => {
+            setPrivacyModalVisible(false);}}
+        />
+        <TermsModal
+          visible={termsModalVisible}
+          onClose={() => {
+            setTermsModalVisible(false);}}
+        />
       </Animated.View>
     </SafeAreaView>
   );
@@ -422,7 +453,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.lg,
     ...SHADOWS.sm,
   },
-    DeleteSection: {
+  DeleteSection: {
     marginBottom: SPACING.md,
     backgroundColor: COLORS.pureWhite,
     marginHorizontal: SPACING.md,

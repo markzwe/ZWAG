@@ -3,17 +3,14 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 // import { deleteItem } from "@/convex/items"; // Remove this line
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Image } from "expo-image";
-import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -34,7 +31,6 @@ export default function ItemViewDetailModalForGenerateOutfit(
     api.items.getOneItemById,
     itemId ? { itemId: itemId as Id<"items"> } : "skip"
   );
-
 
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
@@ -62,7 +58,6 @@ export default function ItemViewDetailModalForGenerateOutfit(
     }
   }, [item]);
 
-
   if (!item) {
     return (
       <View style={styles.loadingContainer}>
@@ -81,10 +76,7 @@ export default function ItemViewDetailModalForGenerateOutfit(
     >
       {/* Header */}
       <View style={[styles.header, {}]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={onClose}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={onClose}>
           <Ionicons name="close-outline" size={24} color={COLORS.offWhite} />
         </TouchableOpacity>
       </View>
@@ -92,10 +84,7 @@ export default function ItemViewDetailModalForGenerateOutfit(
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {},
-        ]}
+        contentContainerStyle={[styles.scrollContent, {}]}
       >
         {/* Image Preview Card */}
         <View style={styles.imageCard}>
@@ -159,21 +148,7 @@ export default function ItemViewDetailModalForGenerateOutfit(
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Color</Text>
             <View style={styles.inputCard}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Navy blue, charcoal gray..."
-                placeholderTextColor={COLORS.textSecondary}
-                value={color}
-                onChangeText={setColor}
-                selectionColor={COLORS.textPrimary}
-              />
-              <View style={styles.inputIcon}>
-                <Ionicons
-                  name="color-palette-outline"
-                  size={20}
-                  color={COLORS.textSecondary}
-                />
-              </View>
+              <Text style={styles.textInput}>{color}</Text>
             </View>
           </View>
 
@@ -259,7 +234,6 @@ const styles = StyleSheet.create({
     top: SPACING.sm,
     right: SPACING.md,
     zIndex: 10,
-
   },
   backButton: {
     width: 40,

@@ -58,5 +58,15 @@ export default defineSchema({
         fullBody: v.optional(v.id("items")),
       
   })
-  .index("byUser", ["userId"])
+  .index("byUser", ["userId"]),
+
+
+ // inviteCodes schema updated to match convex/inviteCodes.ts implementation
+  inviteCodes: defineTable({
+    code: v.string(), // e.g. "ZWAG2023"
+    maxUses: v.optional(v.number()), // number of allowed uses
+    redeemedBy: v.optional(v.array(v.string())), // list of clerk user ids who redeemed
+    createdAt: v.optional(v.number()), // timestamp ms
+    expiresAt: v.optional(v.number()), // optional expiration timestamp ms since epoch
+  }).index("byCode", ["code"]),
 });

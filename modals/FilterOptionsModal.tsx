@@ -1,3 +1,4 @@
+import { SUBCATEGORY_OPTIONS } from "@/constants/categories";
 import { COLORS, SPACING } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -33,34 +34,27 @@ const FILTER_OPTIONS: FilterOption[] = [
   {
     id: "tops",
     label: "Tops",
-    subOptions: ["T-Shirts", "Shirts", "Tank Tops", "Sweaters", "Hoodies"],
+    subOptions: SUBCATEGORY_OPTIONS.Tops as string[],
   },
   {
     id: "bottoms",
     label: "Bottoms",
-    subOptions: ["Jeans", "Pants", "Shorts", "Joggers"],
+    subOptions: SUBCATEGORY_OPTIONS.Bottoms as string[],
   },
   {
     id: "outerwear",
     label: "Outerwear",
-    subOptions: [
-      "Jackets",
-      "Coats",
-      "Blazers",
-      "Cardigans",
-      "Vests",
-      "Raincoats",
-    ],
+    subOptions: SUBCATEGORY_OPTIONS.Outerwear as string[],
   },
   {
     id: "shoes",
     label: "Shoes",
-    subOptions: ["Sneakers", "Boots", "Sandals", "Flats", "Athletic"],
+    subOptions: SUBCATEGORY_OPTIONS.Shoes as string[],
   },
   {
     id: "fullbody",
     label: "Full Body",
-    subOptions: ["Jumpsuits", "Rompers", "Overalls", "Sets"],
+    subOptions: SUBCATEGORY_OPTIONS["Full Body"] as string[],
   },
   {
     id: "color",
@@ -109,15 +103,7 @@ const FILTER_OPTIONS: FilterOption[] = [
   {
     id: "accessories",
     label: "Accessories",
-    subOptions: [
-      "Bags",
-      "Jewelry",
-      "Watches",
-      "Belts",
-      "Hats",
-      "Scarves",
-      "Sunglasses",
-    ],
+    subOptions: SUBCATEGORY_OPTIONS.Accessories as string[],
   },
 ];
 

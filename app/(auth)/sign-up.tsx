@@ -1,7 +1,9 @@
 import { COLORS } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
+import PrivacyModal from "@/modals/PrivacyModal";
+import TermsModal from "@/modals/TermsModal";
 import { useStylePreferences } from "@/providers/StylePreferencesProvider";
-import { useSSO } from "@clerk/clerk-expo";
+import { useSSO, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
@@ -22,9 +24,13 @@ import {
 
 export default function SignUpScreen() {
   const { startSSOFlow } = useSSO();
+  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
   const { preferences, clearPreferences } = useStylePreferences();
   const updateStylePreferences = useMutation(api.users.updateStylePreferences);
+  const redeemInviteCode = useMutation(api.inviteCodes.redeemInviteCode);
+  const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
   // COMMENTED OUT FOR V1 - SSO ONLY
   /*
@@ -44,6 +50,19 @@ export default function SignUpScreen() {
   */
 
   const router = useRouter();
+
+  // Helper function to redeem invite code after authentication
+  const redeemInviteCodeAfterAuth = async (userId: string) => {
+    if (preferences?.referralCode) {
+      try {
+        await redeemInviteCode({ code: preferences.referralCode, userId });
+        console.log("Invite code redeemed successfully");
+      } catch (error) {
+        console.error("Failed to redeem invite code:", error);
+        // Don't block the user flow if invite code redemption fails
+      }
+    }
+  };
 
   // Helper function to save style preferences after authentication
   const saveStylePreferences = async () => {
@@ -103,8 +122,19 @@ export default function SignUpScreen() {
       });
       if (setActive && createdSessionId) {
         await setActive({ session: createdSessionId });
-        await saveStylePreferences(); // Save preferences after authentication
-        router.push("/onBordingScreens/payWall");
+
+        if (user?.id) {
+          // Redeem invite code
+          await redeemInviteCodeAfterAuth(user.id);
+
+          // ✅ Update metadata right here
+          await user?.update({
+            unsafeMetadata: { hasCompletedOnboarding: true },
+          });
+        }
+
+        await saveStylePreferences();
+        await router.push("/(tabs)");
       }
     } catch (error) {
       console.error("Google sign-in failed:", error);
@@ -122,8 +152,16 @@ export default function SignUpScreen() {
       });
       if (setActive && createdSessionId) {
         await setActive({ session: createdSessionId });
-        await saveStylePreferences(); // Save preferences after authentication
-        router.push("/onBordingScreens/payWall");
+
+        if (user?.id) {
+          await redeemInviteCodeAfterAuth(user.id);
+          await user.update({
+            unsafeMetadata: { hasCompletedOnboarding: true },
+          });
+        }
+
+        await saveStylePreferences();
+        router.push("/(tabs)");
       }
     } catch (error) {
       console.error("Apple sign-in failed:", error);
@@ -352,10 +390,33 @@ export default function SignUpScreen() {
         <View style={styles.termsFooter}>
           <Text style={styles.termsText}>
             By continuing you agree to ZWAG's{" "}
-            <Text style={styles.termsLink}>Terms and Conditions</Text> and{" "}
-            <Text style={styles.termsLink}>Privacy Policy</Text>
+            <Text
+              style={styles.termsLink}
+              onPress={() => setTermsModalVisible(true)}
+            >
+              Terms of Use
+            </Text>{" "}
+            and{" "}
+            <Text
+              style={styles.termsLink}
+              onPress={() => setPrivacyModalVisible(true)}
+            >
+              Privacy Policy
+            </Text>
           </Text>
         </View>
+          <PrivacyModal
+                  visible={privacyModalVisible}
+                  onClose={() => {
+                    setPrivacyModalVisible(false);
+                  }}
+                />
+                <TermsModal
+                  visible={termsModalVisible}
+                  onClose={() => {
+                    setTermsModalVisible(false);
+                  }}
+                />
       </KeyboardAvoidingView>
     </View>
   );

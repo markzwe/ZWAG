@@ -6,7 +6,7 @@ import { COLORS } from "../../constants/theme";
 
 export default function TabLayout() {
   const { isSignedIn } = useAuth();
-  if (!isSignedIn) return <Redirect href={"/onBordingScreens/welcome"} />;
+  console.log("isSignedIn in _layout.tsx :", isSignedIn);
   return (
     <Tabs
       screenOptions={{

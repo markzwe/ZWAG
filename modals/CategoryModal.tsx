@@ -1,4 +1,5 @@
 import { BORDER_RADIUS, COLORS } from "@/constants/theme";
+import { CATEGORY_OPTIONS, SUBCATEGORY_OPTIONS } from "@/constants/categories";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import React from "react";
@@ -24,77 +25,6 @@ export default function CategoryModal({
   setCategory,
   setSubcategory,
 }: CategoryModalProps) {
-  // Category and subcategory options
-  const categoryOptions = [
-    "Tops",
-    "Bottoms",
-    "Outerwear",
-    "Shoes",
-    "Full Body",
-    "Accessories",
-  ];
-
-  const subcategoryOptions: Record<string, string[]> = {
-    Tops: [
-      "T-Shirts",
-      "Shirts",
-      "Tank Tops",
-      "Sweaters",
-      "Polos",
-      "Henleys",
-      "Dress Shirts",
-      "Long Sleeve Shirts",
-      "Short Sleeve Shirts",
-      "Hoodies",
-      "Cardigans",
-      "Vests",
-    ],
-    Bottoms: [
-      "Jeans",
-      "Chinos",
-      "Dress Pants",
-      "Shorts",
-      "Joggers",
-      "Sweatpants",
-      "Cargo Pants",
-      "Khakis",
-    ],
-    Outerwear: [
-      "Jackets",
-      "Coats",
-      "Blazers",
-      "Bomber Jackets",
-      "Denim Jackets",
-      "Leather Jackets",
-      "Parkas",
-      "Windbreakers",
-      "Raincoats",
-    ],
-    Shoes: [
-      "Sneakers",
-      "Dress Shoes",
-      "Boots",
-      "Loafers",
-      "Sandals",
-      "Oxfords",
-      "Derby Shoes",
-      "Chelsea Boots",
-      "Monk Straps",
-    ],
-    Accessories: [
-      "Hats",
-      "Bags",
-      "Jewelry",
-      "Belts",
-      "Watches",
-      "Sunglasses",
-      "Scarves",
-      "Ties",
-      "Pocket Squares",
-      "Cufflinks",
-    ],
-    "Full Body": ["Suits", "Dresses", "Jumpsuits", "Rompers", "Coveralls"],
-  };
 
   const [selectedCategory, setSelectedCategory] = React.useState("");
   const [showSubcategories, setShowSubcategories] = React.useState(false);
@@ -104,7 +34,7 @@ export default function CategoryModal({
   const handleCategoryChange = (value: string) => {
     setSelectedCategory(value);
     setSelectedSubcategory("");
-    if (subcategoryOptions[value]) {
+    if (SUBCATEGORY_OPTIONS[value]) {
       setShowSubcategories(true);
     } else {
       setCategory(value);
@@ -156,7 +86,7 @@ export default function CategoryModal({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.categoryList}
             >
-              {categoryOptions.map((option) => {
+              {CATEGORY_OPTIONS.map((option) => {
                 const isSelected = selectedCategory === option;
                 return (
                   <TouchableOpacity
@@ -191,7 +121,7 @@ export default function CategoryModal({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.categoryList}
             >
-              {subcategoryOptions[selectedCategory]?.map((option) => {
+              {SUBCATEGORY_OPTIONS[selectedCategory]?.map((option) => {
                 const isSelected = selectedSubcategory === option;
                 return (
                   <TouchableOpacity

@@ -13,7 +13,7 @@ import {
 import { COLORS, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { useStylePreferences } from "@/providers/StylePreferencesProvider";
-import { SignedIn, useAuth, useUser } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import { useMutation } from "convex/react";
@@ -55,9 +55,17 @@ export default function StyleQuestionnaire() {
   const { user } = useUser();
   const { setPreferences: setStylePrefs } = useStylePreferences();
   const updateStylePreferences = useMutation(api.users.updateStylePreferences);
+  const validateInviteCode = useMutation(api.inviteCodes.validateInviteCode);
+  const redeemInviteCode = useMutation(api.inviteCodes.redeemInviteCode);
   const { isSignedIn } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInviteCodeValid, setIsInviteCodeValid] = useState<boolean | null>(
+    null
+  );
+  const [inviteCodeText, setInviteCodeText] = useState<string | null>(null);
+  const [isPressedSubmit, setIsPressedSubmit] = useState(false);
+  const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [preferences, setPreferences] = useState<StylePreferences>({
     styles: [],
     colors: [],
@@ -109,6 +117,33 @@ export default function StyleQuestionnaire() {
       handleFinish();
     }
   };
+  const handleSubmitInviteCode = async () => {
+    const code = preferences.referralCode?.trim();
+    if (!code) return;
+
+    setIsInviteCodeValid(false);
+    setIsValidatingCode(true);
+
+    try {
+      const isValid = await handleCheckInviteCode(code);
+      setIsInviteCodeValid(isValid);
+    } finally {
+      setIsValidatingCode(false);
+      setIsPressedSubmit(true);
+    }
+  };
+
+  const handleCheckInviteCode = async (code: string) => {
+    if (!code.trim()) return false;
+
+    try {
+      const result = await validateInviteCode({ code: code.trim() });
+      return result.valid;
+    } catch (error) {
+      console.error("Failed to validate invite code:", error);
+      return false;
+    }
+  };
 
   const handleBack = () => {
     if (currentStep > 1) {
@@ -118,64 +153,89 @@ export default function StyleQuestionnaire() {
     }
   };
 
- const handleFinish = async () => {
-  setIsLoading(true);
-  try {
-    // Always store preferences in context first
-    setStylePrefs(preferences);
-    console.log("Style Preferences stored in context:", preferences);
-    console.log("User metadata:", user?.unsafeMetadata?.hasCompletedOnboarding);
-    console.log("Is user signed in:", isSignedIn);
-
-    // If user is signed in, save to database immediately
-    if (isSignedIn && user) {
+  const saveOnBoardingStatus = async () => {
+    if (user) {
       try {
-        await updateStylePreferences({
-          stylePreferences: preferences.styles,
-          favoriteColors: preferences.colors,
-          height: preferences.height,
-          weight: preferences.weight,
-          fitPreference: preferences.fit,
-          avoidClothing: preferences.avoidClothing,
-          preferredOccasions: preferences.occasions,
-          preferredBrands: preferences.brands,
-          seasonalOutfits: preferences.seasonalOutfits,
-        });
-        console.log("Style Preferences saved to database");
-        
-        // Check if user has completed onboarding to determine navigation
-        // Changed: Check for explicit true value, treat undefined as incomplete onboarding
-        if (user?.unsafeMetadata?.hasCompletedOnboarding === true) {
-          // User is updating preferences, go back to main app
-          router.replace("/(tabs)");
-        } else {
-          // First time setup or incomplete onboarding, continue to paywall
-          router.replace("/onBordingScreens/payWall");
+        user?.update({
+          unsafeMetadata: { hasCompletedOnboarding: true },
+        })
+      } catch (error) {
+        console.error("Failed to update onboarding status:", error);
+      }
+    }
+  }
+
+  const handleFinish = async () => {
+    setIsLoading(true);
+    try {
+      // Always store preferences in context first
+      setStylePrefs(preferences);
+      
+
+      // If user is signed in, save to database immediately
+      if (isSignedIn && user) {
+        try {
+          await updateStylePreferences({
+            stylePreferences: preferences.styles,
+            favoriteColors: preferences.colors,
+            height: preferences.height,
+            weight: preferences.weight,
+            fitPreference: preferences.fit,
+            avoidClothing: preferences.avoidClothing,
+            preferredOccasions: preferences.occasions,
+            preferredBrands: preferences.brands,
+            seasonalOutfits: preferences.seasonalOutfits,
+          });
+          console.log("Style Preferences saved to database");
+          saveOnBoardingStatus();
+
+          // Check if user has completed onboarding to determine navigation
+          // Changed: Check for explicit true value, treat undefined as incomplete onboarding
+          // if (user?.unsafeMetadata?.hasCompletedOnboarding === true) {
+            // User is updating preferences, go back to main app
+            router.replace("/(tabs)");
+          // } else {
+          //   // First time setup or incomplete onboarding, continue to paywall
+          //   router.replace("/onBordingScreens/payWall");
+          // }
+        } catch (dbError) {
+          console.error("Failed to save to database:", dbError);
+          // Continue with flow even if database save fails
+          if (user?.publicMetadata?.hasCompletedOnboarding === true) {
+            router.replace("/(tabs)");
+          } else {
+            router.replace("/onBordingScreens/payWall");
+          }
         }
-      } catch (dbError) {
-        console.error("Failed to save to database:", dbError);
-        // Continue with flow even if database save fails
-        if (user?.unsafeMetadata?.hasCompletedOnboarding === true) {
-          router.replace("/(tabs)");
-        } else {
-          router.replace("/onBordingScreens/payWall");
+      } else {
+        // User not signed in yet, redeem invite code and navigate to sign-up
+        // Preferences are stored in context and will be saved after authentication
+        try {
+          // Store the invite code temporarily for redemption after sign-up
+          // We'll handle the actual redemption in the sign-up flow
+          console.log(
+            "Invite code will be redeemed after sign-up:",
+            preferences.referralCode
+          );
+          router.replace("/(auth)/sign-up");
+        } catch (error) {
+          console.error("Failed to process invite code:", error);
+          Alert.alert(
+            "Error",
+            "Failed to process invite code. Please try again."
+          );
         }
       }
-    } else {
-      // User not signed in yet, navigate to sign-up
-      // Preferences are stored in context and will be saved after authentication
-      router.replace("/(auth)/sign-up");
+    } catch (error) {
+      console.error("Failed to process preferences:", error);
+      Alert.alert(
+        "Error",
+        "Failed to save your preferences. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error("Failed to process preferences:", error);
-    Alert.alert(
-      "Error",
-      "Failed to save your preferences. Please try again."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
   const canProceed = () => {
     switch (currentStep) {
       case 1:
@@ -193,7 +253,7 @@ export default function StyleQuestionnaire() {
       case 7:
         return preferences.height && preferences.weight;
       case 8:
-        return true; // Referral code is optional
+        return isInviteCodeValid; // Require valid invite code
       default:
         return false;
     }
@@ -265,13 +325,7 @@ export default function StyleQuestionnaire() {
                         },
                       ]}
                     />
-                    <Text
-                      style={
-                        styles.colorText
-                      }
-                    >
-                      {colorOption.name}
-                    </Text>
+                    <Text style={styles.colorText}>{colorOption.name}</Text>
                   </TouchableOpacity>
                 )
               )}
@@ -529,26 +583,57 @@ export default function StyleQuestionnaire() {
           </View>
         );
 
+      //  In future, this case will be referral code step.
+      // For now, this is invite code & required to complete the onboarding flow
       case 8:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.questionTitle}>Have a referral code?</Text>
+            <Text style={styles.questionTitle}>Invite Code</Text>
             <Text style={styles.questionSubtitle}>
-              Optional - Enter your referral code to unlock special benefits
+              Enter your invite code to create account
             </Text>
-            <TextInput
-              style={styles.referralInput}
-              value={preferences.referralCode}
-              onChangeText={(text) =>
-                setPreferences((prev) => ({ ...prev, referralCode: text }))
-              }
-              placeholder="Enter referral code"
-              autoCapitalize="characters"
-              autoCorrect={false}
-            />
+            <View style={styles.inviteCodeContainer}>
+              <TextInput
+                style={[
+                  styles.referralInput,
+                  isInviteCodeValid && styles.validCodeInput,
+                  isValidatingCode && styles.validatingCodeInput,
+                ]}
+                onChangeText={(text) => {
+                  setPreferences((prev) => ({
+                    ...prev,
+                    referralCode: text,
+                  }));
+                  setIsInviteCodeValid(false); // reset until user presses done
+                }}
+                value={preferences.referralCode}
+                onSubmitEditing={handleSubmitInviteCode}
+                placeholder="Enter invite code"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                maxLength={6}
+                returnKeyType="done"
+              />
+
+              {isValidatingCode && (
+                <Text style={styles.validatingText}>Validating...</Text>
+              )}
+
+              {isInviteCodeValid === true && (
+                <Text style={styles.validCodeText}>✓ Valid invite code</Text>
+              )}
+
+              {isInviteCodeValid === false &&
+               isPressedSubmit &&     
+                (
+                  <Text style={styles.invalidCodeText}>
+                    ✗ Invalid invite code
+                  </Text>
+                )}
+            </View>
             <Text style={styles.whyText}>
-              💡 Why: Referral codes unlock exclusive features and rewards for
-              both you and your friend.
+              Don't have invite code? Please email us at{" "}
+              {"zwag.hello@gmail.com"}
             </Text>
           </View>
         );
@@ -926,5 +1011,37 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontWeight: "600",
     marginBottom: 24,
+  },
+  inviteCodeContainer: {
+    marginBottom: 24,
+  },
+  validCodeInput: {
+    borderColor: "#4CAF50",
+    backgroundColor: "#F1F8E9",
+  },
+  validatingCodeInput: {
+    borderColor: COLORS.darkGray,
+    backgroundColor: COLORS.offWhite,
+  },
+  validatingText: {
+    fontSize: 14,
+    color: COLORS.darkGray,
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
+  },
+  validCodeText: {
+    fontSize: 14,
+    color: "#4CAF50",
+    textAlign: "center",
+    marginTop: 8,
+    fontWeight: "500",
+  },
+  invalidCodeText: {
+    fontSize: 14,
+    color: "#F44336",
+    textAlign: "center",
+    marginTop: 8,
+    fontWeight: "500",
   },
 });
