@@ -51,15 +51,15 @@ export const updateStylePreferences = mutation({
         const user = await getAuthenticatedUser(ctx);
         
         await ctx.db.patch(user._id, {
-            stylePreferences: args.stylePreferences,
-            favoriteColors: args.favoriteColors,
-            height: args.height,
-            weight: args.weight,
-            fitPreference: args.fitPreference,
-            avoidClothing: args.avoidClothing,
-            preferredOccasions: args.preferredOccasions,
-            preferredBrands: args.preferredBrands,
-            seasonalOutfits: args.seasonalOutfits,
+          ...(args.stylePreferences !== undefined && { stylePreferences: args.stylePreferences }),
+          ...(args.favoriteColors !== undefined && { favoriteColors: args.favoriteColors }),
+          ...(args.height !== undefined && { height: args.height }),
+          ...(args.weight !== undefined && { weight: args.weight }),
+          ...(args.fitPreference !== undefined && { fitPreference: args.fitPreference }),
+          ...(args.avoidClothing !== undefined && { avoidClothing: args.avoidClothing }),
+          ...(args.preferredOccasions !== undefined && { preferredOccasions: args.preferredOccasions }),
+          ...(args.preferredBrands !== undefined && { preferredBrands: args.preferredBrands }),
+          ...(args.seasonalOutfits !== undefined && { seasonalOutfits: args.seasonalOutfits }),
         });
     },
 });

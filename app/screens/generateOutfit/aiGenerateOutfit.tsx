@@ -1,181 +1,134 @@
 import GeneratedOutfitsCanvas from "@/components/GeneratedOutfitsCanvas";
-import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from "@/constants/theme";
+import { LoadingSpinner, Button } from "@/components/ui";
+import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { OutfitItem } from "@/types";
+import { ErrorHandler, Logger } from "@/utils/errorHandler";
 import { Ionicons } from "@expo/vector-icons";
-import { useCanvasRef } from "@shopify/react-native-skia";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
-import {
-  ActivityIndicator,
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { StyleSheet, Text, View, Alert, TouchableOpacity, ActivityIndicator, Dimensions } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { height: screenHeight } = Dimensions.get("window");
 
 export default function AiGenerateOutfit() {
   const { selectedIds, occasion, weather } = useLocalSearchParams();
-
-  // Memoize the selectedIdsArray to prevent infinite loops
-  const selectedIdsArray = React.useMemo(() => {
-    return typeof selectedIds === "string" ? selectedIds.split(",") : [];
-  }, [selectedIds]);
-
-  const ref = useCanvasRef();
   const insets = useSafeAreaInsets();
-  console.log("Selected IDs in AiGenerateOutfit:", selectedIdsArray);
 
+  // Hooks
   const getItems = useQuery(api.items.getItemsForGenerateOutfit);
   const generateOutfit = useAction(api.generateOutfits.analyzeOutfit);
   const saveOutfit = useMutation(api.outfits.saveOutfit);
 
-  // Fixed type definition - accessories should be a single ID, not array
-  type outfitResultType = {
-    top?: Id<"items">;
-    bottom?: Id<"items">;
-    shoes?: Id<"items">;
-    outerwear?: Id<"items">;
-    accessories?: Id<"items">[]; // This should be array of IDs
-    fullBody?: Id<"items">;
-  };
+  // State
+  const [outfitResult, setOutfitResult] = useState<Partial<OutfitItem> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
 
-  const [outfitResult, setOutfitResult] =
-    React.useState<outfitResultType | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [regenerating, setRegenerating] = React.useState(false);
+  // Memoized values
+  const selectedIdsArray = useMemo(() => {
+    return typeof selectedIds === "string" ? selectedIds.split(",") : [];
+  }, [selectedIds]);
 
-  const handleSaveOutfit = async () => {
-    if (!outfitResult) return;
-
-    const outfitData = {
-      top: outfitResult.top || ("" as Id<"items">),
-      bottom: outfitResult.bottom || ("" as Id<"items">),
-      shoes: outfitResult.shoes || undefined,
-      outerwear: outfitResult.outerwear || undefined,
-      accessories: Array.isArray(outfitResult.accessories)
-        ? outfitResult.accessories
-        : undefined,
-      fullBody: outfitResult.fullBody ? outfitResult.fullBody : undefined,
-    };
-
-    try {
-      await saveOutfit(outfitData);
-      alert("Outfit saved successfully!");
-    } catch (error) {
-      console.error("Error saving outfit:", error);
-      alert("Failed to save outfit. Please try again.");
+  const handleSaveOutfit = useCallback(async () => {
+    if (!outfitResult?.top || !outfitResult?.bottom) {
+      Alert.alert("Error", "Cannot save incomplete outfit");
+      return;
     }
-  };
-
-  const handleRegenerateOutfit = async () => {
-    if (!getItems || getItems.length === 0) return;
-
-    setRegenerating(true);
-    setError(null);
 
     try {
-      const result = await generateOutfit({
-        items: getItems.map((item) => ({
-          ...item,
-          color: item.color ?? "",
-        })),
-        preferredItemsId: selectedIdsArray,
-        occasion: occasion as string,
-        weather: weather as string,
-      });
+      const outfitData: OutfitItem = {
+        top: outfitResult.top,
+        bottom: outfitResult.bottom,
+        ...(outfitResult.shoes && { shoes: outfitResult.shoes }),
+        ...(outfitResult.outerwear && { outerwear: outfitResult.outerwear }),
+        ...(outfitResult.accessories?.length && { accessories: outfitResult.accessories }),
+        ...(outfitResult.fullBody && { fullBody: outfitResult.fullBody }),
+      };
 
-      let parsed = null;
-      if (typeof result === "string") {
-        try {
-          const rawParsed = JSON.parse(result);
-          console.log("Raw regenerate AI response:", rawParsed);
+      await saveOutfit(outfitData);
+      Alert.alert("Success", "Outfit saved successfully!");
+      Logger.info('Outfit saved successfully', { outfitData });
+    } catch (error) {
+      Logger.error('Failed to save outfit', error);
+      const zwagError = ErrorHandler.handleAIGenerationError(error);
+      Alert.alert("Error", zwagError.message);
+    }
+  }, [outfitResult, saveOutfit]);
 
-          // Clean up the response by removing empty strings and invalid values
-          parsed = Object.entries(rawParsed).reduce((acc, [key, value]) => {
-            // Only include fields with valid, non-empty string values
-            if (value && typeof value === "string" && value.trim() !== "") {
-              acc[key] = value;
-            }
-            return acc;
-          }, {} as any);
-
-          console.log("Cleaned regenerate AI response:", parsed);
-        } catch (e) {
-          setError("AI response was not valid JSON");
-          parsed = null;
-        }
-      } else {
-        parsed = result;
+  const parseAIResponse = useCallback((result: any) => {
+    if (typeof result === "string") {
+      try {
+        const parsed = JSON.parse(result);
+        // Clean up response - only include valid, non-empty values
+        return Object.entries(parsed).reduce((acc, [key, value]) => {
+          if (value && typeof value === "string" && value.trim() !== "") {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as any);
+      } catch {
+        throw new Error("Invalid AI response format");
       }
-      setOutfitResult(parsed);
-    } catch (err) {
-      console.error("Error regenerating outfit:", err);
-      setError("Failed to regenerate outfit");
+    }
+    return result;
+  }, []);
+
+  const generateOutfitData = useCallback(async () => {
+    if (!getItems?.length) return null;
+
+    const result = await generateOutfit({
+      items: getItems.map((item) => ({ ...item, color: item.color ?? "" })),
+      preferredItemsId: selectedIdsArray,
+      occasion: occasion as string,
+      weather: weather as string,
+    });
+
+    return parseAIResponse(result);
+  }, [getItems, generateOutfit, selectedIdsArray, occasion, weather, parseAIResponse]);
+
+  const handleRegenerateOutfit = useCallback(async () => {
+    try {
+      setRegenerating(true);
+      setError(null);
+      const result = await generateOutfitData();
+      setOutfitResult(result);
+      Logger.info('Outfit regenerated successfully');
+    } catch (error) {
+      Logger.error('Failed to regenerate outfit', error);
+      const zwagError = ErrorHandler.handleAIGenerationError(error);
+      setError(zwagError.message);
     } finally {
       setRegenerating(false);
     }
-  };
+  }, [generateOutfitData]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchOutfit = async () => {
-      if (!getItems || getItems.length === 0) return;
-
-      setLoading(true);
-      setError(null);
+      if (!getItems?.length) return;
 
       try {
-        const result = await generateOutfit({
-          items: getItems.map((item) => ({
-            ...item,
-            color: item.color ?? "",
-          })),
-          preferredItemsId: selectedIdsArray,
-          occasion: occasion as string,
-          weather: weather as string,
-        });
-
-        let parsed = null;
-        if (typeof result === "string") {
-          try {
-            const rawParsed = JSON.parse(result);
-            console.log("Raw AI response:", rawParsed);
-
-            // Clean up the response by removing empty strings and invalid values
-            parsed = Object.entries(rawParsed).reduce((acc, [key, value]) => {
-              // Only include fields with valid, non-empty string values
-              if (value && typeof value === "string" && value.trim() !== "") {
-                acc[key] = value;
-              }
-              return acc;
-            }, {} as any);
-
-            console.log("Cleaned AI response:", parsed);
-          } catch (e) {
-            setError("AI response was not valid JSON");
-            parsed = null;
-          }
-        } else {
-          parsed = result;
-        }
-        setOutfitResult(parsed);
-      } catch (err) {
-        console.error("Error generating outfit:", err);
-        setError("Failed to generate outfit");
+        setLoading(true);
+        setError(null);
+        const result = await generateOutfitData();
+        setOutfitResult(result);
+        Logger.info('Initial outfit generated successfully');
+      } catch (error) {
+        Logger.error('Failed to generate initial outfit', error);
+        const zwagError = ErrorHandler.handleAIGenerationError(error);
+        setError(zwagError.message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchOutfit();
-  }, [getItems, generateOutfit, selectedIdsArray, occasion, weather]);
+  }, [getItems, generateOutfitData]);
 
   // Calculate available space for content
   const headerHeight = 60;
@@ -237,16 +190,16 @@ export default function AiGenerateOutfit() {
             item={{
               top: outfitResult.top as Id<"items">,
               bottom: outfitResult.bottom as Id<"items">,
-              shoes: outfitResult.shoes as Id<"items">,
-              outerwear:
-                outfitResult.outerwear === ""
-                  ? undefined
-                  : (outfitResult.outerwear as Id<"items">),
-              accessories: outfitResult.accessories,
-              fullBody:
-                outfitResult.fullBody === ""
-                  ? undefined
-                  : (outfitResult.fullBody as Id<"items">),
+              ...(outfitResult.shoes && { shoes: outfitResult.shoes as Id<"items"> }),
+              ...(outfitResult.outerwear && outfitResult.outerwear !== "" && { 
+                outerwear: outfitResult.outerwear as Id<"items"> 
+              }),
+              ...(outfitResult.accessories && outfitResult.accessories.length > 0 && { 
+                accessories: outfitResult.accessories 
+              }),
+              ...(outfitResult.fullBody && outfitResult.fullBody !== "" && { 
+                fullBody: outfitResult.fullBody as Id<"items"> 
+              }),
             }}
           />
         ) : (

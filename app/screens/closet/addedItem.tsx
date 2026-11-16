@@ -69,7 +69,7 @@ export default function AddedItem() {
         {
           httpMethod: "POST",
           uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-          mimeType: "image/jpeg",
+          mimeType: /\.png(?:$|[?#])/i.test(processedImageUri) ? "image/png" : "image/jpeg",
         }
       );
 

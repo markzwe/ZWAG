@@ -1,15 +1,10 @@
 import { registerWebModule, NativeModule } from 'expo';
 
-import { ChangeEventPayload } from './VisionBgRemover.types';
-
-type VisionBgRemoverModuleEvents = {
-  onChange: (params: ChangeEventPayload) => void;
-}
+import { VisionBgRemoverModuleEvents } from './VisionBgRemover.types';
 
 class VisionBgRemoverModule extends NativeModule<VisionBgRemoverModuleEvents> {
-  PI = Math.PI;
-  async setValueAsync(value: string): Promise<void> {
-    this.emit('onChange', { value });
+  isVisionKitAvailable() {
+    return false;
   }
   hello() {
     return 'Hello world! 👋';

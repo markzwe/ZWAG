@@ -1,6 +1,9 @@
 import { COLORS, SPACING } from "@/constants/theme";
+import { UI_CONSTANTS, TEXT_CONSTANTS } from "@/constants/app";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { OutfitItem, PreviewItem } from "@/types";
+import { Logger } from "@/utils/errorHandler";
 import ItemViewDetailModalForGenerateOutfit from "@/modals/ItemViewDetailModalForGenerateOutfit";
 import {
   Canvas,
@@ -8,9 +11,9 @@ import {
   useCanvasRef,
   useImage,
 } from "@shopify/react-native-skia";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Image } from "expo-image";
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -20,51 +23,48 @@ import {
   View,
 } from "react-native";
 
-type GeneratedOutfitsCanvasProps = {
-  item: {
-    top: Id<"items">;
-    bottom: Id<"items">;
-    shoes?: Id<"items">;
-    outerwear?: Id<"items">;
-    accessories?: Id<"items">[];
-    fullBody?: Id<"items">;
-  };
-};
+interface GeneratedOutfitsCanvasProps {
+  item: OutfitItem;
+}
 
 export default function GeneratedOutfitsCanvas({
   item,
 }: GeneratedOutfitsCanvasProps) {
   const ref = useCanvasRef();
 
-  const CANVAS_WIDTH = 350;
-  const CANVAS_HEIGHT = 500;
-
-  function clamp(val: number, min: number, max: number) {
-    return Math.max(min, Math.min(val, max));
-  }
 
   // Query all items by ID using your Convex function
-  const outfitItemIds = {
-    top: item.top ? (item.top as Id<"items">) : undefined,
-    bottom: item.bottom ? (item.bottom as Id<"items">) : undefined,
-    shoes: item.shoes ? (item.shoes as Id<"items">) : undefined,
-    outerwear: item.outerwear ? (item.outerwear as Id<"items">) : undefined,
-    accessories: Array.isArray(item.accessories)
-      ? item.accessories[0] // Only pass the first accessory to the query
-      : item.accessories
-        ? (item.accessories as Id<"items">)
-        : undefined,
-  };
+  const outfitItemIds = useMemo(() => {
+    const ids: {
+      top?: Id<"items">;
+      bottom?: Id<"items">;
+      shoes?: Id<"items">;
+      outerwear?: Id<"items">;
+      accessories?: Id<"items">;
+    } = {
+      top: item.top,
+      bottom: item.bottom,
+    };
+    
+    if (item.shoes) ids.shoes = item.shoes;
+    if (item.outerwear) ids.outerwear = item.outerwear;
+    if (item.accessories) {
+      ids.accessories = Array.isArray(item.accessories)
+        ? item.accessories[0] // Only pass the first accessory to the query
+        : item.accessories;
+    }
+    
+    return ids;
+  }, [item]);
 
   const items = useQuery(api.items.getOutfitItemsFromAi, outfitItemIds);
-  const outfit = useMutation(api.outfits.saveOutfit);
 
   // Helper function to get safe image URL with better optimization
-  const getSafeImageUrl = (url?: string) => {
+  const getSafeImageUrl = useCallback((url?: string): string => {
     if (!url || url.trim() === "") return "";
     // Add image optimization parameters if using a CDN like Cloudinary
     return url;
-  };
+  }, []);
 
   // Load images using Skia's useImage hook
   const topImg = useImage(getSafeImageUrl(items?.top?.imageUrl));
@@ -72,12 +72,12 @@ export default function GeneratedOutfitsCanvas({
   const shoesImg = useImage(getSafeImageUrl(items?.shoes?.imageUrl));
   const outerwearImg = useImage(getSafeImageUrl(items?.outerwear?.imageUrl));
   // For accessories, always call a fixed number of useImage hooks to avoid hook order errors
-  const MAX_ACCESSORIES = 5;
-  const accessoriesArr = Array.isArray(items?.accessories)
-    ? items.accessories.slice(0, MAX_ACCESSORIES)
-    : items?.accessories
-      ? [items.accessories]
-      : [];
+  const accessoriesArr = useMemo(() => {
+    if (!items?.accessories) return [];
+    return Array.isArray(items.accessories)
+      ? items.accessories.slice(0, UI_CONSTANTS.MAX_ACCESSORIES)
+      : [items.accessories];
+  }, [items?.accessories]);
 
   const accessoriesImgs = [
     useImage(getSafeImageUrl(accessoriesArr[0]?.imageUrl)),
@@ -87,38 +87,65 @@ export default function GeneratedOutfitsCanvas({
     useImage(getSafeImageUrl(accessoriesArr[4]?.imageUrl)),
   ];
 
-  const [itemDetailVisible, setItemDetailVisible] = React.useState(false);
+  const [itemDetailVisible, setItemDetailVisible] = React.useState<boolean>(false);
   const [selectedItem, setSelectedItem] = React.useState<string | null>(null);
 
   // Function to get the selected item ID based on the selected item type
-  // This is used to pass the correct item ID to the ItemViewDetailModalForGenerateOutfit
-  // so that it can fetch the correct item details from the database
-  // and display them in the modal.
-  const getSelectedItemId = () => {
+  const getSelectedItemId = useCallback((): Id<"items"> | null => {
     if (!selectedItem || !items) return null;
 
-    switch (selectedItem) {
-      case "top":
-        return items.top?._id;
-      case "bottom":
-        return items.bottom?._id;
-      case "shoes":
-        return items.shoes?._id;
-      case "outerwear":
-        return items.outerwear?._id;
-      case "accessories":
-        return items.accessories?._id;
-      default:
-        return null;
+    try {
+      switch (selectedItem) {
+        case "top":
+          return items.top?._id || null;
+        case "bottom":
+          return items.bottom?._id || null;
+        case "shoes":
+          return items.shoes?._id || null;
+        case "outerwear":
+          return items.outerwear?._id || null;
+        case "accessories":
+          return items.accessories?._id || null;
+        default:
+          Logger.warn("Unknown selected item type", { selectedItem });
+          return null;
+      }
+    } catch (error) {
+      Logger.error("Failed to get selected item ID", error, { selectedItem });
+      return null;
     }
-  };
+  }, [selectedItem, items]);
+
+  // Memoize preview data to prevent unnecessary recalculations
+  const previewData = useMemo((): PreviewItem[] => {
+    if (!items) return [];
+
+    const baseItems: PreviewItem[] = [
+      { label: "Top", url: items.top?.imageUrl || "" },
+      { label: "Bottom", url: items.bottom?.imageUrl || "" },
+      { label: "Shoes", url: items.shoes?.imageUrl || "" },
+      { label: "Outerwear", url: items.outerwear?.imageUrl || "" },
+    ];
+
+    // Add accessories
+    const accessoryItems: PreviewItem[] = Array.isArray(items.accessories)
+      ? items.accessories.map((acc, idx) => ({
+          label: `Accessory ${idx + 1}`,
+          url: acc?.imageUrl || "",
+        }))
+      : items.accessories
+        ? [{ label: "Accessory", url: items.accessories.imageUrl || "" }]
+        : [];
+
+    return [...baseItems, ...accessoryItems].filter((item) => !!item.url);
+  }, [items]);
 
   // Wait for DB query - return loading state AFTER calling all hooks
   if (!items) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color={COLORS.darkGray} />
-        <Text style={styles.loadingText}>Loading outfit...</Text>
+        <Text style={styles.loadingText}>{TEXT_CONSTANTS.LOADING.OUTFIT}</Text>
       </View>
     );
   }
@@ -195,27 +222,17 @@ export default function GeneratedOutfitsCanvas({
       {/* Preview section below canvas */}
       <View style={styles.previewSection}>
         <FlatList
-          data={[
-            { label: "Top", url: items?.top?.imageUrl },
-            { label: "Bottom", url: items?.bottom?.imageUrl },
-            { label: "Shoes", url: items?.shoes?.imageUrl },
-            { label: "Outerwear", url: items?.outerwear?.imageUrl },
-            // Accessories: push all accessory images as separate preview cards
-            ...(Array.isArray(items?.accessories)
-              ? items.accessories.map((acc: any, idx: number) => ({
-                  label: `Accessory ${idx + 1}`,
-                  url: acc?.imageUrl,
-                }))
-              : items?.accessories
-                ? [{ label: "Accessory", url: items.accessories?.imageUrl }]
-                : []),
-          ].filter((item) => !!item.url)}
+          data={previewData}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.previewCard}
               onPress={() => {
-                setItemDetailVisible(true);
-                setSelectedItem(item.label.toLowerCase());
+                try {
+                  setItemDetailVisible(true);
+                  setSelectedItem(item.label.toLowerCase());
+                } catch (error) {
+                  Logger.error("Failed to open item detail", error, { item: item.label });
+                }
               }}
             >
               <Image
@@ -233,7 +250,7 @@ export default function GeneratedOutfitsCanvas({
         {/* View detail modal */}
         {getSelectedItemId() && (
           <ItemViewDetailModalForGenerateOutfit
-            itemId={getSelectedItemId() as Id<"items">}
+            itemId={getSelectedItemId()!}
             visible={itemDetailVisible}
             onClose={() => setItemDetailVisible(false)}
           />
@@ -256,8 +273,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   canvas: {
-    width: 350,
-    height: 440,
+    width: UI_CONSTANTS.CANVAS_DIMENSIONS.WIDTH,
+    height: UI_CONSTANTS.CANVAS_DIMENSIONS.HEIGHT - 60, // Adjust for better fit
     backgroundColor: COLORS.imageBackground,
     borderRadius: 16,
     shadowColor: COLORS.black,

@@ -1,46 +1,130 @@
-# Welcome to your Expo app 👋
+# ZWAG - AI-Powered Personal Stylist App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**ZWAG** is a production-ready React Native app that uses AI to help users create personalized outfit recommendations from their wardrobe. Built with modern TypeScript, strict coding practices, and scalable architecture.
 
-## Get started
+## 🚀 Features
 
-1. Install dependencies
+- **AI-Powered Outfit Generation**: Uses OpenAI GPT-4 to create personalized outfit recommendations
+- **Smart Image Processing**: Apple VisionKit integration for automatic background removal (iOS 16+)
+- **Real-time Database**: Convex backend with real-time synchronization
+- **Advanced Caching**: Intelligent caching system with automatic cleanup and invalidation
+- **Type-Safe Architecture**: Strict TypeScript with comprehensive type definitions
+- **Reusable UI Components**: Production-ready component library with consistent design
+- **Error Handling & Logging**: Comprehensive error boundaries and logging system
 
+## 🏗️ Architecture
+
+### Tech Stack
+- **Frontend**: React Native + Expo Router (file-based routing)
+- **Backend**: Convex (serverless functions + real-time database)
+- **AI**: OpenAI GPT-4 for outfit generation
+- **Graphics**: React Native Skia for outfit visualization
+- **Auth**: Clerk authentication with Google/Apple SSO
+- **Image Processing**: Apple VisionKit for background removal
+
+### Project Structure
+```
+├── app/                    # Expo Router pages
+│   ├── (auth)/            # Authentication flows
+│   ├── (tabs)/            # Main app with bottom tabs
+│   ├── onBoardingScreens/ # Onboarding flow
+│   └── screens/           # Feature-specific screens
+├── components/            # Reusable components
+│   └── ui/               # UI component library
+├── constants/            # Centralized constants
+├── convex/              # Backend functions & schema
+├── hooks/               # Custom React hooks
+├── providers/           # Context providers
+├── types/               # TypeScript type definitions
+├── utils/               # Utility functions
+└── modules/             # Custom Expo modules
+```
+
+## 🛠️ Development Setup
+
+### Prerequisites
+- Node.js 18+
+- iOS 16+ (for VisionKit features)
+- Expo CLI
+- Convex CLI
+
+### Installation
+
+1. **Clone and install dependencies**
    ```bash
+   git clone <repository-url>
+   cd ZWAG
    npm install
    ```
 
-2. Start the app
+2. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Configure the following variables:
+   ```
+   CONVEX_DEPLOYMENT=your-convex-deployment-url
+   CONVEX_OPENAI_API_KEY=your-openai-api-key
+   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-key
+   ```
 
+3. **Start Convex backend**
+   ```bash
+   npx convex dev
+   ```
+
+4. **Start the app**
    ```bash
    npx expo start
    ```
-# ZWAG — AI-Powered Personal Stylist App
 
-**Founder:** Zwe Htet  
-**Co-founder:** TBD
+### Development Commands
+```bash
+# Start development server
+npx expo start
 
----
+# Run on iOS simulator
+npx expo run:ios
 
-## Project Overview
+# Run on Android emulator
+npx expo run:android
 
-ZWAG is an iOS-first mobile app designed to help men dress better by leveraging AI-powered outfit suggestions tailored to their personal wardrobe. Users upload photos of their clothing items, which are processed to create a digital wardrobe. The AI analyzes the wardrobe and recommends stylish, personalized outfit combinations based on occasion, mood, and fashion trends.
+# Start Convex backend
+npx convex dev
 
----
+# View Convex dashboard
+npx convex dashboard
 
-## Key Features
+# Type checking
+npx tsc --noEmit
 
-- **Digital Wardrobe Management**  
-  Upload multiple photos of clothing items (shirts, pants, shoes, accessories). Backgrounds are automatically removed using Apple’s VisionKit, and items are categorized with descriptive captions and metadata.
+# Linting
+npx expo lint
+```
 
-- **AI Outfit Suggestions**  
-  Uses OpenAI GPT-4o (or fine-tuned models) to generate outfit ideas considering occasion, weather, mood, and style preferences.
+`npx expo run:ios` (also `npm run ios`) builds and installs the iOS app,
+opens the simulator, and starts Metro. An npm postinstall script backports
+Xcode 27 Device Hub support to the Expo CLI bundled with SDK 53. Older Xcode
+installations keep Expo's normal Simulator support.
+The Podfile also keeps dependency deployment targets at the app's minimum iOS
+version and applies the fmt 11 compatibility fix for recent Apple Clang versions
+whenever pods are installed.
 
-- **“Match My Fit” Mode**  
-  Select an anchor clothing item and get AI recommendations for matching or contrasting pieces from your wardrobe.
+## 📱 Key Features
 
-- **Find Clothes from Screenshots (Future)**  
-  Upload social media or shopping screenshots; AI will suggest similar items from your wardrobe.
+### AI Outfit Generation Pipeline
+1. **Image Upload**: Users photograph clothing items
+2. **Background Removal**: VisionKit automatically removes backgrounds (iOS 16+)
+3. **AI Analysis**: Items get AI-generated captions and metadata
+4. **Outfit Generation**: GPT-4 creates outfit combinations based on context
+5. **Visualization**: React Native Skia renders outfit combinations
+
+### Caching System
+- **5-minute TTL cache** for outfit lists
+- **Automatic cleanup** of expired entries
+- **Cache invalidation** after mutations
+- **Development cache stats** for monitoring
 
 ---
 

@@ -50,6 +50,37 @@ target 'ZWAG' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
+    # Xcode 27 rejects pod resource bundles with legacy deployment targets.
+    minimum_ios = podfile_properties['ios.deploymentTarget'] || '15.1'
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        current_ios = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if current_ios.nil? || Gem::Version.new(current_ios) < Gem::Version.new(minimum_ios)
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = minimum_ios
+        end
+      end
+    end
+
+    # fmt 11's consteval format checks fail with recent Apple Clang.
+    # https://github.com/fmtlib/fmt/issues/4740
+    fmt_header = File.join(installer.sandbox.root, 'fmt/include/fmt/base.h')
+    if File.exist?(fmt_header)
+      source = File.read(fmt_header)
+      marker = '// ZWAG: Apple Clang fmt compatibility'
+      unless source.include?(marker)
+        needle = "#if FMT_USE_CONSTEVAL\n"
+        raise 'fmt consteval guard changed; review the compatibility patch' unless source.include?(needle)
+        override = "#{marker}\n#if defined(__apple_build_version__) && __clang_major__ >= 17\n#undef FMT_USE_CONSTEVAL\n#define FMT_USE_CONSTEVAL 0\n#endif\n"
+        mode = File.stat(fmt_header).mode
+        begin
+          File.chmod(mode | 0200, fmt_header)
+          File.write(fmt_header, source.sub(needle, override + needle))
+        ensure
+          File.chmod(mode, fmt_header)
+        end
+      end
+    end
+
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
     installer.target_installation_results.pod_target_installation_results

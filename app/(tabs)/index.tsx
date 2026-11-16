@@ -1,7 +1,11 @@
 import Header from "@/components/Header";
-import { BORDER_RADIUS, COLORS, FONT_SIZES, SPACING } from "@/constants/theme";
+import { Button, Card, EmptyState } from "@/components/ui";
+import { BORDER_RADIUS, COLORS, SPACING } from "@/constants/theme";
+import { CLOTHING_CATEGORIES, TEXT_CONSTANTS, UI_CONSTANTS, ROUTES } from "@/constants/app";
 import { api } from "@/convex/_generated/api";
 import { useImageRotation } from "@/hooks/useImageRotation";
+import { CategoryPreview } from "@/types";
+import { Logger } from "@/utils/errorHandler";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { Image } from "expo-image";
@@ -21,39 +25,40 @@ export default function Closet() {
   const getImageUrls = useQuery(api.items.getPreviewImageByCategory);
   const countItems = useQuery(api.items.countItemsByCategory);
 
-  const CATEGORY_NAMES: Record<string, string> = {
-    top: "Tops",
-    bottom: "Bottoms",
-    outerwear: "Outerwear",
-    shoes: "Shoes",
-    fullbody: "Full Body",
-    accessories: "Accessories",
-  };
+  Logger.debug("Closet component rendered", { 
+    hasImageUrls: !!getImageUrls, 
+    hasCountItems: !!countItems 
+  });
 
   // Memoize categories to prevent unnecessary recalculations
-  const categories = useMemo(() => {
+  const categories = useMemo((): CategoryPreview[] => {
     if (!getImageUrls || !countItems) return [];
 
-    return Object.entries(CATEGORY_NAMES)
-      .map(([key, displayName]) => ({
-        name: displayName,
-        count: countItems[displayName] || 0,
-        images:
-          getImageUrls.find((item) => item.category === displayName)?.images ||
-          [],
-      }))
-      .filter((category) => category.count > 0);
+    try {
+      return Object.entries(CLOTHING_CATEGORIES)
+        .map(([, displayName]) => ({
+          name: displayName,
+          count: countItems[displayName] || 0,
+          images:
+            getImageUrls.find((item) => item.category === displayName)?.images ||
+            [],
+        }))
+        .filter((category) => category.count > 0);
+    } catch (error) {
+      Logger.error("Failed to process categories", error);
+      return [];
+    }
   }, [getImageUrls, countItems]);
 
   // Use the custom image rotation hook
   const { getCurrentImageUrl } = useImageRotation({
     categories,
-    intervalMs: 10000, // 10 seconds
+    intervalMs: UI_CONSTANTS.IMAGE_ROTATION_INTERVAL,
   });
 
   // Memoized category card renderer
   const renderCategoryCard = useCallback(
-    (category: any, index: number) => (
+    (category: CategoryPreview, index: number) => (
       <TouchableOpacity
         key={`${category.name}-${category.count}`} // Stable key based on content
         style={[
@@ -61,10 +66,14 @@ export default function Closet() {
           index % 2 === 0 ? styles.cardEven : styles.cardOdd,
         ]}
         onPress={() => {
-          router.push({
-            pathname: "/screens/closet/browseItems",
-            params: { categoryName: category.name },
-          });
+          try {
+            router.push({
+              pathname: ROUTES.SCREENS.CLOSET.BROWSE_ITEMS,
+              params: { categoryName: category.name },
+            });
+          } catch (error) {
+            Logger.error("Navigation failed", error, { categoryName: category.name });
+          }
         }}
       >
         {/* Dynamic Background Image from database */}
@@ -93,19 +102,19 @@ export default function Closet() {
     <View style={[{ paddingTop: insets.top }, styles.container]}>
       <Header />
       {categories.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No items found</Text>
-          <Text style={styles.emptySubtitle}>
-            Start building your closet by adding your first item!
-          </Text>
-          <TouchableOpacity
-            style={styles.emptyAddButton}
-            onPress={() => router.push("/screens/closet/addItem")}
-          >
-            <Ionicons name="add" size={24} color={COLORS.pureWhite} />
-            <Text style={styles.emptyAddButtonText}>Add Item</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          title={TEXT_CONSTANTS.EMPTY_CLOSET.TITLE}
+          subtitle={TEXT_CONSTANTS.EMPTY_CLOSET.SUBTITLE}
+          actionText={TEXT_CONSTANTS.EMPTY_CLOSET.BUTTON_TEXT}
+          onAction={() => {
+            try {
+              router.push(ROUTES.SCREENS.CLOSET.ADD_ITEM);
+            } catch (error) {
+              Logger.error("Navigation to add item failed", error);
+            }
+          }}
+          icon={<Ionicons name="shirt-outline" size={48} color={COLORS.textSecondary} />}
+        />
       ) : (
         <ScrollView
           style={styles.scrollContainer}
@@ -117,53 +126,57 @@ export default function Closet() {
 
             {/* Add Button */}
             {categories.length > 0 && (
-              <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => router.push("/screens/closet/addItem")}
-              >
-                <Ionicons
-                  name="add"
-                  size={28}
-                  color={COLORS.pureWhite || "#FFFFFF"}
-                />
-                <Text
-                  style={{
-                    color: COLORS.pureWhite,
-                    fontSize: FONT_SIZES.lg,
-                    fontWeight: "600",
-                  }}
-                >
-                  Add Item
-                </Text>
-              </TouchableOpacity>
+              <Button
+                title={TEXT_CONSTANTS.BUTTONS.ADD_ITEM}
+                onPress={() => {
+                  try {
+                    router.push(ROUTES.SCREENS.CLOSET.ADD_ITEM);
+                  } catch (error) {
+                    Logger.error("Navigation to add item failed", error);
+                  }
+                }}
+                variant="primary"
+                size="lg"
+                fullWidth
+                icon={<Ionicons name="add" size={24} color={COLORS.pureWhite} />}
+                style={styles.addButton}
+              />
             )}
             {/* Browse All Section */}
-            <TouchableOpacity
-              style={styles.browseAllCard}
-              onPress={() => router.push("/screens/closet/browseItems")}
-            >
-              <View style={styles.browseAllContent}>
-                <View style={styles.browseAllLeft}>
-                  <Text style={styles.browseAllTitle}>
-                    Browse All Items in Closet
-                  </Text>
-                  <Text style={styles.browseAllSubtitle}>
-                    View your entire collection
-                  </Text>
+            <Card variant="elevated" style={styles.browseAllCard}>
+              <TouchableOpacity
+                onPress={() => {
+                  try {
+                    router.push(ROUTES.SCREENS.CLOSET.BROWSE_ITEMS);
+                  } catch (error) {
+                    Logger.error("Navigation to browse items failed", error);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.browseAllContent}>
+                  <View style={styles.browseAllLeft}>
+                    <Text style={styles.browseAllTitle}>
+                      {TEXT_CONSTANTS.SECTIONS.BROWSE_ALL}
+                    </Text>
+                    <Text style={styles.browseAllSubtitle}>
+                      {TEXT_CONSTANTS.SECTIONS.BROWSE_ALL_SUBTITLE}
+                    </Text>
+                  </View>
+                  <View style={styles.browseAllIcon}>
+                    <Ionicons
+                      name="grid-outline"
+                      size={28}
+                      color={COLORS.textPrimary}
+                    />
+                  </View>
                 </View>
-                <View style={styles.browseAllIcon}>
-                  <Ionicons
-                    name="grid-outline"
-                    size={28}
-                    color={COLORS.textPrimary || "#1A1A1A"}
-                  />
-                </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </Card>
 
             {/* Categories Header */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Browse By Categories</Text>
+              <Text style={styles.sectionTitle}>{TEXT_CONSTANTS.SECTIONS.BROWSE_BY_CATEGORIES}</Text>
               <View style={styles.sectionLine} />
             </View>
 
@@ -410,5 +423,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
+  },
+  createButtonText: {
+    color: COLORS.pureWhite,
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  addButton: {
+    marginBottom: SPACING.md,
   },
 });
