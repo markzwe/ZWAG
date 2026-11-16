@@ -33,10 +33,10 @@ export const uploadItem = mutation({
             category: args.category,
             subcategory: args.subcategory,
             style: args.style,
-            color: args.color,
+            ...(args.color !== undefined && { color: args.color }),
             caption: args.caption,
-            embedding: args.embedding,
-            brand: args.brand, 
+            ...(args.embedding !== undefined && { embedding: args.embedding }),
+            ...(args.brand !== undefined && { brand: args.brand }),
             imageUrl 
         };
 
@@ -129,28 +129,24 @@ export const getItemsForGenerateOutfit = query({
 
 export const getOutfitItemsFromAi = query({
   args: {
-    top: v.optional(v.id("items")),
-    bottom: v.optional(v.id("items")),
-    shoes: v.optional(v.id("items")),
+    top: v.optional(v.id("items")), bottom: v.optional(v.id("items")),
+    fullBody: v.optional(v.id("items")), shoes: v.optional(v.id("items")),
     outerwear: v.optional(v.id("items")),
-    accessories: v.optional(v.id("items")), // typo preserved if AI returns it this way
+    accessories: v.optional(v.union(v.id("items"), v.array(v.id("items")))),
   },
   handler: async (ctx, outfit) => {
-    const ids = Object.values(outfit).filter(Boolean);
-
-    const allItems = await ctx.db
-      .query("items")
-      .filter((q) => q.or(...ids.map((id) => q.eq(q.field("_id"), id!))))
-      .collect();
-
-    const byId = Object.fromEntries(allItems.map((item) => [item._id, item]));
-
+    const user = await getAuthenticatedUser(ctx);
+    const accessoryIds = Array.isArray(outfit.accessories) ? outfit.accessories : outfit.accessories ? [outfit.accessories] : [];
+    const ownedItem = async (id: Id<"items"> | undefined) => {
+      if (!id) return null;
+      const item = await ctx.db.get(id);
+      return item?.userId === user._id ? item : null;
+    };
     return {
-      top: outfit.top ? byId[outfit.top] : null,
-      bottom: outfit.bottom ? byId[outfit.bottom] : null,
-      shoes: outfit.shoes ? byId[outfit.shoes] : null,
-      outerwear: outfit.outerwear ? byId[outfit.outerwear] : null,
-      accessories: outfit.accessories ? byId[outfit.accessories] : null,
+      top: await ownedItem(outfit.top), bottom: await ownedItem(outfit.bottom),
+      fullBody: await ownedItem(outfit.fullBody), shoes: await ownedItem(outfit.shoes),
+      outerwear: await ownedItem(outfit.outerwear),
+      accessories: (await Promise.all(accessoryIds.map(ownedItem))).filter(item => item !== null),
     };
   },
 });
@@ -246,9 +242,9 @@ export const updateItem = mutation({
       category: args.category,
       subcategory: args.subcategory,
       style: args.style,
-      color: args.color,
+      ...(args.color !== undefined && { color: args.color }),
       caption: args.caption,
-      brand: args.brand,
+      ...(args.brand !== undefined && { brand: args.brand }),
     });
 
     return true;

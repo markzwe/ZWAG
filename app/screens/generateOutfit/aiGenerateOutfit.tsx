@@ -1,138 +1,108 @@
 import GeneratedOutfitsCanvas from "@/components/GeneratedOutfitsCanvas";
-import { LoadingSpinner, Button } from "@/components/ui";
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
-import { OutfitItem } from "@/types";
-import { ErrorHandler, Logger } from "@/utils/errorHandler";
+import type { Id } from "@/convex/_generated/dataModel";
+import type { GeneratedOutfit } from "@/convex/generateOutfits";
+import { ConvexError } from "convex/values";
 import { Ionicons } from "@expo/vector-icons";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { StyleSheet, Text, View, Alert, TouchableOpacity, ActivityIndicator, Dimensions } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { height: screenHeight } = Dimensions.get("window");
+const eventId = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const messageFor = (error: unknown) => error instanceof ConvexError && typeof error.data === "string"
+  ? error.data : "Couldn't finish this request. Please try again.";
+type Suggestion = GeneratedOutfit & { historyId: Id<"outfitHistory"> };
 
 export default function AiGenerateOutfit() {
-  const { selectedIds, occasion, weather } = useLocalSearchParams();
+  const params = useLocalSearchParams<{ selectedIds?: string; occasion?: string; weather?: string }>();
+  const preferred = typeof params.selectedIds === "string" ? params.selectedIds : "";
+  const occasion = typeof params.occasion === "string" ? params.occasion : "Casual";
+  const weather = typeof params.weather === "string" ? params.weather : "Sunny";
   const insets = useSafeAreaInsets();
-
-  // Hooks
-  const getItems = useQuery(api.items.getItemsForGenerateOutfit);
   const generateOutfit = useAction(api.generateOutfits.analyzeOutfit);
+  const recordShown = useMutation(api.outfitHistory.recordShown);
+  const logFeedback = useMutation(api.outfitHistory.logFeedback);
   const saveOutfit = useMutation(api.outfits.saveOutfit);
-
-  // State
-  const [outfitResult, setOutfitResult] = useState<Partial<OutfitItem> | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const outfitResult = suggestion?.outfit;
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const busy = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
-  // Memoized values
-  const selectedIdsArray = useMemo(() => {
-    return typeof selectedIds === "string" ? selectedIds.split(",") : [];
-  }, [selectedIds]);
+  const requestSuggestion = useCallback(async (): Promise<Suggestion> => {
+    const result = await generateOutfit({ preferredItemsId: preferred.split(",").filter(Boolean), occasion, weather });
+    if (!mounted.current) throw new Error("Generation screen closed");
+    // Persist only accepted results, immediately before displaying them. A duplicate
+    // or stale/deleted item is rejected transactionally before it can be shown.
+    const historyId = await recordShown({ ...result, eventId: eventId() });
+    return { ...result, historyId };
+  }, [generateOutfit, recordShown, preferred, occasion, weather]);
+
+  // Reuse the initial request across Strict Mode effect setup/cleanup. Closet or
+  // history subscriptions must never trigger extra automatic generations.
+  const initial = useRef<{ key: string; promise: Promise<Suggestion> } | null>(null);
+  const requestKey = JSON.stringify([preferred, occasion, weather]);
+  useEffect(() => {
+    let active = true;
+    busy.current = true;
+    setLoading(true);
+    setError(null);
+    setSuggestion(null);
+    if (initial.current?.key !== requestKey) initial.current = { key: requestKey, promise: requestSuggestion() };
+    initial.current.promise.then(result => { if (active) setSuggestion(result); })
+      .catch(error => { if (active) setError(messageFor(error)); })
+      .finally(() => { if (active) { busy.current = false; setLoading(false); } });
+    return () => { active = false; };
+  }, [requestKey, requestSuggestion]);
+
+  const handleAnother = useCallback(async (action: "try_another" | "dislike") => {
+    if (busy.current) return;
+    busy.current = true;
+    setRegenerating(true);
+    try {
+      if (suggestion) await logFeedback({ historyId: suggestion.historyId, action, eventId: eventId() });
+      const next = await requestSuggestion();
+      if (mounted.current) { setSuggestion(next); setError(null); }
+    } catch (error) {
+      if (mounted.current) {
+        if (suggestion) Alert.alert("No new outfit", messageFor(error));
+        else setError(messageFor(error));
+      }
+    } finally {
+      busy.current = false;
+      if (mounted.current) setRegenerating(false);
+    }
+  }, [suggestion, logFeedback, requestSuggestion]);
+  const handleRegenerateOutfit = useCallback(() => handleAnother("try_another"), [handleAnother]);
 
   const handleSaveOutfit = useCallback(async () => {
-    if (!outfitResult?.top || !outfitResult?.bottom) {
-      Alert.alert("Error", "Cannot save incomplete outfit");
-      return;
-    }
-
+    if (!suggestion || busy.current) return;
+    busy.current = true;
+    setSaving(true);
     try {
-      const outfitData: OutfitItem = {
-        top: outfitResult.top,
-        bottom: outfitResult.bottom,
-        ...(outfitResult.shoes && { shoes: outfitResult.shoes }),
-        ...(outfitResult.outerwear && { outerwear: outfitResult.outerwear }),
-        ...(outfitResult.accessories?.length && { accessories: outfitResult.accessories }),
-        ...(outfitResult.fullBody && { fullBody: outfitResult.fullBody }),
-      };
-
-      await saveOutfit(outfitData);
-      Alert.alert("Success", "Outfit saved successfully!");
-      Logger.info('Outfit saved successfully', { outfitData });
+      await saveOutfit({ historyId: suggestion.historyId, eventId: eventId() });
+      if (mounted.current) Alert.alert("Saved", "Outfit saved to your collection.");
     } catch (error) {
-      Logger.error('Failed to save outfit', error);
-      const zwagError = ErrorHandler.handleAIGenerationError(error);
-      Alert.alert("Error", zwagError.message);
-    }
-  }, [outfitResult, saveOutfit]);
-
-  const parseAIResponse = useCallback((result: any) => {
-    if (typeof result === "string") {
-      try {
-        const parsed = JSON.parse(result);
-        // Clean up response - only include valid, non-empty values
-        return Object.entries(parsed).reduce((acc, [key, value]) => {
-          if (value && typeof value === "string" && value.trim() !== "") {
-            acc[key] = value;
-          }
-          return acc;
-        }, {} as any);
-      } catch {
-        throw new Error("Invalid AI response format");
-      }
-    }
-    return result;
-  }, []);
-
-  const generateOutfitData = useCallback(async () => {
-    if (!getItems?.length) return null;
-
-    const result = await generateOutfit({
-      items: getItems.map((item) => ({ ...item, color: item.color ?? "" })),
-      preferredItemsId: selectedIdsArray,
-      occasion: occasion as string,
-      weather: weather as string,
-    });
-
-    return parseAIResponse(result);
-  }, [getItems, generateOutfit, selectedIdsArray, occasion, weather, parseAIResponse]);
-
-  const handleRegenerateOutfit = useCallback(async () => {
-    try {
-      setRegenerating(true);
-      setError(null);
-      const result = await generateOutfitData();
-      setOutfitResult(result);
-      Logger.info('Outfit regenerated successfully');
-    } catch (error) {
-      Logger.error('Failed to regenerate outfit', error);
-      const zwagError = ErrorHandler.handleAIGenerationError(error);
-      setError(zwagError.message);
+      if (mounted.current) Alert.alert("Couldn't save outfit", messageFor(error));
     } finally {
-      setRegenerating(false);
+      busy.current = false;
+      if (mounted.current) setSaving(false);
     }
-  }, [generateOutfitData]);
-
-  useEffect(() => {
-    const fetchOutfit = async () => {
-      if (!getItems?.length) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await generateOutfitData();
-        setOutfitResult(result);
-        Logger.info('Initial outfit generated successfully');
-      } catch (error) {
-        Logger.error('Failed to generate initial outfit', error);
-        const zwagError = ErrorHandler.handleAIGenerationError(error);
-        setError(zwagError.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOutfit();
-  }, [getItems, generateOutfitData]);
+  }, [suggestion, saveOutfit]);
+  const controlsDisabled = loading || regenerating || saving;
 
   // Calculate available space for content
   const headerHeight = 60;
-  const buttonHeight = 120; // Space for both buttons
+  const buttonHeight = 180; // Space for Try Another, Dislike, and Save
   const spacing = SPACING.md;
   const availableHeight =
     screenHeight -
@@ -181,27 +151,13 @@ export default function AiGenerateOutfit() {
             <TouchableOpacity
               style={styles.retryButton}
               onPress={handleRegenerateOutfit}
+              disabled={controlsDisabled}
             >
               <Text style={styles.retryButtonText}>Try Again</Text>
             </TouchableOpacity>
           </View>
         ) : outfitResult ? (
-          <GeneratedOutfitsCanvas
-            item={{
-              top: outfitResult.top as Id<"items">,
-              bottom: outfitResult.bottom as Id<"items">,
-              ...(outfitResult.shoes && { shoes: outfitResult.shoes as Id<"items"> }),
-              ...(outfitResult.outerwear && outfitResult.outerwear !== "" && { 
-                outerwear: outfitResult.outerwear as Id<"items"> 
-              }),
-              ...(outfitResult.accessories && outfitResult.accessories.length > 0 && { 
-                accessories: outfitResult.accessories 
-              }),
-              ...(outfitResult.fullBody && outfitResult.fullBody !== "" && { 
-                fullBody: outfitResult.fullBody as Id<"items"> 
-              }),
-            }}
-          />
+          <GeneratedOutfitsCanvas item={outfitResult} />
         ) : (
           <View style={styles.centerContent}>
             <Text style={styles.statusText}>No outfit generated yet</Text>
@@ -221,7 +177,7 @@ export default function AiGenerateOutfit() {
           <TouchableOpacity
             style={[styles.regenerateButton]}
             onPress={handleRegenerateOutfit}
-            disabled={regenerating}
+            disabled={controlsDisabled}
           >
             {regenerating ? (
               <ActivityIndicator size="small" color={COLORS.textPrimary} />
@@ -238,6 +194,13 @@ export default function AiGenerateOutfit() {
           </TouchableOpacity>
         )}
 
+        {outfitResult && (
+          <TouchableOpacity style={styles.regenerateButton} onPress={() => handleAnother("dislike")} disabled={controlsDisabled}>
+            <Ionicons name="thumbs-down-outline" size={20} color={COLORS.textPrimary} />
+            <Text style={styles.regenerateButtonText}>Dislike</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Save Button */}
         <TouchableOpacity
           style={[
@@ -245,10 +208,10 @@ export default function AiGenerateOutfit() {
             !outfitResult && styles.saveButtonDisabled,
           ]}
           onPress={handleSaveOutfit}
-          disabled={!outfitResult}
+          disabled={!outfitResult || controlsDisabled}
         >
           <Ionicons name="heart-outline" size={20} color={COLORS.pureWhite} />
-          <Text style={styles.saveButtonText}>Save Outfit</Text>
+          <Text style={styles.saveButtonText}>{saving ? "Saving..." : "Save Outfit"}</Text>
         </TouchableOpacity>
       </View>
     </View>

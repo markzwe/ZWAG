@@ -1,32 +1,34 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthenticatedUser } from "./users";
-import { Id } from "./_generated/dataModel";
+import { buildCandidates, validateOutfit } from "../lib/outfitRules";
+import { closetCandidates } from "./outfitHistory";
 export const saveOutfit = mutation({
-    args: {
-            top: v.id('items'),
-            bottom: v.id('items'),
-            shoes: v.optional(v.id('items')),
-            outerwear: v.optional(v.id('items')),
-            accessories: v.optional(v.array(v.id('items'))),
-            fullBody: v.optional(v.id('items')),
-    
-    },
-    handler: async (ctx, args) => {
-        const currentUser = await getAuthenticatedUser(ctx);
-
-        const outfit = {
-            userId: currentUser._id,
-            top: args.top,
-            bottom: args.bottom,
-            shoes: args.shoes,
-            outerwear: args.outerwear,
-            accessories: args.accessories,
-            fullBody: args.fullBody,
-        };
-        const outfitId = await ctx.db.insert("outfits", outfit);
-        }
-})
+  args: { historyId: v.id("outfitHistory"), eventId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const history = await ctx.db.get(args.historyId);
+    if (!history || history.userId !== user._id) throw new ConvexError("Outfit not found.");
+    const previous = await ctx.db.query("outfitFeedback").withIndex("by_user_event", q => q.eq("userId", user._id).eq("eventId", args.eventId)).first();
+    if (previous) {
+      if (previous.action !== "save" || previous.historyId !== history._id) throw new ConvexError("Feedback event already used.");
+      return previous.savedOutfitId;
+    }
+    const items = await ctx.db.query("items").withIndex("by_userId", q => q.eq("userId", user._id)).collect();
+    const checked = validateOutfit(history.outfit, buildCandidates(closetCandidates(items), history.weather));
+    if (!checked.outfit) throw new ConvexError(checked.errors.join(" "));
+    const outfit = history.outfit;
+    const outfitId = await ctx.db.insert("outfits", {
+      userId: user._id,
+      ...(outfit.top && { top: outfit.top }), ...(outfit.bottom && { bottom: outfit.bottom }),
+      ...(outfit.fullBody && { fullBody: outfit.fullBody }), ...(outfit.shoes && { shoes: outfit.shoes }),
+      ...(outfit.outerwear && { outerwear: outfit.outerwear }), ...(outfit.accessories && { accessories: outfit.accessories }),
+    });
+    // Save and feedback are committed atomically.
+    await ctx.db.insert("outfitFeedback", { ...args, userId: user._id, itemIds: history.itemIds, action: "save", savedOutfitId: outfitId, createdAt: Date.now() });
+    return outfitId;
+  },
+});
 export const getOutfitByOutfitId = query({
     args: {
         outfitId: v.id('outfits'),
@@ -34,7 +36,7 @@ export const getOutfitByOutfitId = query({
     handler: async (ctx, { outfitId }) => {
         const currentUser = await getAuthenticatedUser(ctx);
         const outfit = await ctx.db.get(outfitId);
-        return outfit;
+        return outfit?.userId === currentUser._id ? outfit : null;
     }
 })
 export const getOutfits = query({

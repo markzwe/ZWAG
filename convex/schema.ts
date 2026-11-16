@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { outfitFields, outfitValidator, sourceValidator } from "./outfitValidators";
 
 export default defineSchema({
 
@@ -50,16 +51,36 @@ export default defineSchema({
     // Outfits created by users & AI
     outfits: defineTable({
       userId: v.id("users"),  
-        top: v.id("items"),
-        bottom: v.id("items"),
-        shoes: v.optional(v.id("items")),
-        outerwear: v.optional(v.id("items")),
-        accessories: v.optional(v.array(v.id("items"))),
-        fullBody: v.optional(v.id("items")),
+      ...outfitFields,
       
   })
   .index("byUser", ["userId"]),
 
+
+  outfitHistory: defineTable({
+    userId: v.id("users"),
+    outfit: outfitValidator,
+    itemIds: v.array(v.id("items")),
+    signature: v.string(),
+    eventId: v.string(),
+    occasion: v.string(),
+    weather: v.string(),
+    source: sourceValidator,
+    shownAt: v.number(),
+  }).index("by_user", ["userId"])
+    .index("by_user_signature", ["userId", "signature"])
+    .index("by_user_event", ["userId", "eventId"]),
+
+  outfitFeedback: defineTable({
+    userId: v.id("users"),
+    historyId: v.id("outfitHistory"),
+    itemIds: v.array(v.id("items")),
+    action: v.union(v.literal("save"), v.literal("dislike"), v.literal("try_another")),
+    eventId: v.string(),
+    savedOutfitId: v.optional(v.id("outfits")),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"])
+    .index("by_user_event", ["userId", "eventId"]),
 
  // inviteCodes schema updated to match convex/inviteCodes.ts implementation
   inviteCodes: defineTable({

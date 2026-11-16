@@ -18,12 +18,12 @@ import {
 } from "react-native";
 
 type OutfitPreviewCardProps = {
-  top: Id<"items">;
-  bottom: Id<"items">;
-  shoes?: Id<"items">;
-  outerwear?: Id<"items">;
-  accessories?: Id<"items">[];
-  fullBody?: Id<"items">;
+  top?: Id<"items"> | undefined;
+  bottom?: Id<"items"> | undefined;
+  shoes?: Id<"items"> | undefined;
+  outerwear?: Id<"items"> | undefined;
+  accessories?: Id<"items">[] | undefined;
+  fullBody?: Id<"items"> | undefined;
   onPress?: () => void;
 };
 
@@ -40,15 +40,8 @@ export default function OutfitPreviewCard({
 
   // Query all items by ID using your Convex function
   const outfitItemIds = {
-    top: top ? (top as Id<"items">) : undefined,
-    bottom: bottom ? (bottom as Id<"items">) : undefined,
-    shoes: shoes ? (shoes as Id<"items">) : undefined,
-    outerwear: outerwear ? (outerwear as Id<"items">) : undefined,
-    accessories: Array.isArray(accessories)
-      ? accessories[0] // Only pass the first accessory to the query
-      : accessories
-        ? (accessories as Id<"items">)
-        : undefined,
+    ...(top && { top }), ...(bottom && { bottom }), ...(fullBody && { fullBody }),
+    ...(shoes && { shoes }), ...(outerwear && { outerwear }), ...(accessories && { accessories }),
   };
 
   const items = useQuery(api.items.getOutfitItemsFromAi, outfitItemIds);
@@ -63,15 +56,12 @@ export default function OutfitPreviewCard({
   // Load images using Skia's useImage hook
   const topImg = useImage(getSafeImageUrl(items?.top?.imageUrl));
   const bottomImg = useImage(getSafeImageUrl(items?.bottom?.imageUrl));
+  const fullBodyImg = useImage(getSafeImageUrl(items?.fullBody?.imageUrl));
   const shoesImg = useImage(getSafeImageUrl(items?.shoes?.imageUrl));
   const outerwearImg = useImage(getSafeImageUrl(items?.outerwear?.imageUrl));
   // For accessories, always call a fixed number of useImage hooks to avoid hook order errors
   const MAX_ACCESSORIES = 5;
-  const accessoriesArr = Array.isArray(items?.accessories)
-    ? items.accessories.slice(0, MAX_ACCESSORIES)
-    : items?.accessories
-      ? [items.accessories]
-      : [];
+  const accessoriesArr = (items?.accessories ?? []).slice(0, MAX_ACCESSORIES);
 
   const accessoriesImgs = [
     useImage(getSafeImageUrl(accessoriesArr[0]?.imageUrl)),
@@ -80,32 +70,6 @@ export default function OutfitPreviewCard({
     useImage(getSafeImageUrl(accessoriesArr[3]?.imageUrl)),
     useImage(getSafeImageUrl(accessoriesArr[4]?.imageUrl)),
   ];
-
-  const [itemDetailVisible, setItemDetailVisible] = React.useState(false);
-  const [selectedItem, setSelectedItem] = React.useState<string | null>(null);
-
-  // Function to get the selected item ID based on the selected item type
-  // This is used to pass the correct item ID to the ItemViewDetailModalForGenerateOutfit
-  // so that it can fetch the correct item details from the database
-  // and display them in the modal.
-  const getSelectedItemId = () => {
-    if (!selectedItem || !items) return null;
-
-    switch (selectedItem) {
-      case "top":
-        return items.top?._id;
-      case "bottom":
-        return items.bottom?._id;
-      case "shoes":
-        return items.shoes?._id;
-      case "outerwear":
-        return items.outerwear?._id;
-      case "accessories":
-        return items.accessories?._id;
-      default:
-        return null;
-    }
-  };
 
   // Wait for DB query - return loading state AFTER calling all hooks
   if (!items) {
@@ -125,6 +89,7 @@ export default function OutfitPreviewCard({
     >
       <View style={styles.canvasWrapper}>
         <Canvas style={styles.canvas} ref={ref}>
+          {fullBodyImg && <SkiaImage image={fullBodyImg} x={!outerwearImg ? 50 : 14} y={8} width={60} height={140} fit="contain" />}
           {/* Top clothing item */}
           {topImg && (
             <SkiaImage

@@ -35,26 +35,11 @@ export default function GeneratedOutfitsCanvas({
 
   // Query all items by ID using your Convex function
   const outfitItemIds = useMemo(() => {
-    const ids: {
-      top?: Id<"items">;
-      bottom?: Id<"items">;
-      shoes?: Id<"items">;
-      outerwear?: Id<"items">;
-      accessories?: Id<"items">;
-    } = {
-      top: item.top,
-      bottom: item.bottom,
+    return {
+      ...(item.top && { top: item.top }), ...(item.bottom && { bottom: item.bottom }),
+      ...(item.fullBody && { fullBody: item.fullBody }), ...(item.shoes && { shoes: item.shoes }),
+      ...(item.outerwear && { outerwear: item.outerwear }), ...(item.accessories && { accessories: item.accessories }),
     };
-    
-    if (item.shoes) ids.shoes = item.shoes;
-    if (item.outerwear) ids.outerwear = item.outerwear;
-    if (item.accessories) {
-      ids.accessories = Array.isArray(item.accessories)
-        ? item.accessories[0] // Only pass the first accessory to the query
-        : item.accessories;
-    }
-    
-    return ids;
   }, [item]);
 
   const items = useQuery(api.items.getOutfitItemsFromAi, outfitItemIds);
@@ -69,14 +54,12 @@ export default function GeneratedOutfitsCanvas({
   // Load images using Skia's useImage hook
   const topImg = useImage(getSafeImageUrl(items?.top?.imageUrl));
   const bottomImg = useImage(getSafeImageUrl(items?.bottom?.imageUrl));
+  const fullBodyImg = useImage(getSafeImageUrl(items?.fullBody?.imageUrl));
   const shoesImg = useImage(getSafeImageUrl(items?.shoes?.imageUrl));
   const outerwearImg = useImage(getSafeImageUrl(items?.outerwear?.imageUrl));
   // For accessories, always call a fixed number of useImage hooks to avoid hook order errors
   const accessoriesArr = useMemo(() => {
-    if (!items?.accessories) return [];
-    return Array.isArray(items.accessories)
-      ? items.accessories.slice(0, UI_CONSTANTS.MAX_ACCESSORIES)
-      : [items.accessories];
+    return (items?.accessories ?? []).slice(0, UI_CONSTANTS.MAX_ACCESSORIES);
   }, [items?.accessories]);
 
   const accessoriesImgs = [
@@ -104,10 +87,12 @@ export default function GeneratedOutfitsCanvas({
           return items.shoes?._id || null;
         case "outerwear":
           return items.outerwear?._id || null;
+        case "full body":
+          return items.fullBody?._id || null;
         case "accessories":
-          return items.accessories?._id || null;
+          return items.accessories[0]?._id || null;
         default:
-          Logger.warn("Unknown selected item type", { selectedItem });
+          if (selectedItem.startsWith("accessory")) return items.accessories[Number(selectedItem.split(" ")[1] ?? 1) - 1]?._id ?? null;
           return null;
       }
     } catch (error) {
@@ -123,19 +108,15 @@ export default function GeneratedOutfitsCanvas({
     const baseItems: PreviewItem[] = [
       { label: "Top", url: items.top?.imageUrl || "" },
       { label: "Bottom", url: items.bottom?.imageUrl || "" },
+      { label: "Full Body", url: items.fullBody?.imageUrl || "" },
       { label: "Shoes", url: items.shoes?.imageUrl || "" },
       { label: "Outerwear", url: items.outerwear?.imageUrl || "" },
     ];
 
     // Add accessories
-    const accessoryItems: PreviewItem[] = Array.isArray(items.accessories)
-      ? items.accessories.map((acc, idx) => ({
-          label: `Accessory ${idx + 1}`,
-          url: acc?.imageUrl || "",
-        }))
-      : items.accessories
-        ? [{ label: "Accessory", url: items.accessories.imageUrl || "" }]
-        : [];
+    const accessoryItems: PreviewItem[] = items.accessories.map((acc, idx) => ({
+      label: `Accessory ${idx + 1}`, url: acc.imageUrl,
+    }));
 
     return [...baseItems, ...accessoryItems].filter((item) => !!item.url);
   }, [items]);
@@ -154,6 +135,7 @@ export default function GeneratedOutfitsCanvas({
     <View style={styles.container}>
       <View style={styles.canvasWrapper}>
         <Canvas style={styles.canvas} ref={ref}>
+          {fullBodyImg && <SkiaImage image={fullBodyImg} x={!outerwearImg ? 110 : 15} y={15} width={130} height={315} fit="contain" />}
           {/* Top clothing item */}
           {topImg && (
             <SkiaImage

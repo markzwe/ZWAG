@@ -58,7 +58,7 @@ export const TEXT_CONSTANTS = {
 // ==================== API CONSTANTS ====================
 export const API_CONSTANTS = {
   OPENAI: {
-    MODEL: "gpt-4.1-nano",
+    MODEL: "gpt-5.6-luna",
     MAX_RETRIES: 3,
     TIMEOUT: 30000, // 30 seconds
   },

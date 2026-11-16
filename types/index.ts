@@ -34,12 +34,12 @@ export const CLOTHING_CATEGORIES: Record<string, ClothingCategory> = {
 
 // ==================== OUTFIT TYPES ====================
 export interface OutfitItem {
-  top: Id<"items">;
-  bottom: Id<"items">;
-  shoes?: Id<"items">;
-  outerwear?: Id<"items">;
-  accessories?: Id<"items">[];
-  fullBody?: Id<"items">;
+  top?: Id<"items"> | undefined;
+  bottom?: Id<"items"> | undefined;
+  shoes?: Id<"items"> | undefined;
+  outerwear?: Id<"items"> | undefined;
+  accessories?: Id<"items">[] | undefined;
+  fullBody?: Id<"items"> | undefined;
 }
 
 export interface Outfit {

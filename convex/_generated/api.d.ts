@@ -17,6 +17,8 @@ import type * as generateOutfits from "../generateOutfits.js";
 import type * as http from "../http.js";
 import type * as inviteCodes from "../inviteCodes.js";
 import type * as items from "../items.js";
+import type * as outfitHistory from "../outfitHistory.js";
+import type * as outfitValidators from "../outfitValidators.js";
 import type * as outfits from "../outfits.js";
 import type * as users from "../users.js";
 
@@ -33,6 +35,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   inviteCodes: typeof inviteCodes;
   items: typeof items;
+  outfitHistory: typeof outfitHistory;
+  outfitValidators: typeof outfitValidators;
   outfits: typeof outfits;
   users: typeof users;
 }>;

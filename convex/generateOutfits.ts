@@ -1,143 +1,70 @@
-import { generateOutfitPrompt } from "@/config/gptPrompt";
-import { API_CONSTANTS, ERROR_CODES } from "@/constants/app";
-import { ItemForAI } from "@/types";
-import { v } from "convex/values";
+import { generateOutfitPrompt } from "../config/gptPrompt";
+import { API_CONSTANTS } from "../constants/app";
+import { buildCandidates, outfitSignature, ruleBasedOutfit, validateOutfit } from "../lib/outfitRules";
+import { ConvexError, v } from "convex/values";
 import OpenAI from "openai";
 import { action } from "./_generated/server";
+import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
+import { closetCandidates, type GenerationContext } from "./outfitHistory";
+import { outfitValidator, sourceValidator } from "./outfitValidators";
 
-/**
- * Analyzes user's wardrobe items and generates outfit recommendations using AI.
- * 
- * @param items - Array of clothing items with metadata
- * @param occasion - Optional occasion context (defaults to "Casual")
- * @param weather - Optional weather context (defaults to "Sunny")
- * @param preferredItemsId - Array of preferred item IDs to include
- * @returns JSON string of outfit recommendations or null if generation fails
- */
+export interface GeneratedOutfit {
+  outfit: Doc<"outfitHistory">["outfit"];
+  source: "ai" | "rules";
+  occasion: string;
+  weather: string;
+}
+
 export const analyzeOutfit = action({
-  args: {
-    items: v.array(
-      v.object({
-        _id: v.id('items'),
-        color: v.string(),
-        caption: v.string(),
-        category: v.string(),
-        subcategory: v.string(),
-        style: v.array(v.string()),
-      })
-    ),
-    preferredItemsId: v.array(v.string()),
-    occasion: v.optional(v.string()),
-    weather: v.optional(v.string()),
-  },
-  handler: async (_, { items, occasion, weather, preferredItemsId }): Promise<string | null> => {
+  args: { preferredItemsId: v.array(v.string()), occasion: v.optional(v.string()), weather: v.optional(v.string()) },
+  returns: v.object({ outfit: outfitValidator, source: sourceValidator, occasion: v.string(), weather: v.string() }),
+  handler: async (ctx, args): Promise<GeneratedOutfit> => {
+    // Never trust client-supplied closet records or cross-user item IDs.
+    const data: GenerationContext = await ctx.runQuery(internal.outfitHistory.generationContext, {});
+    const occasion = args.occasion || API_CONSTANTS.DEFAULT_VALUES.OCCASION;
+    const weather = args.weather || API_CONSTANTS.DEFAULT_VALUES.WEATHER;
+    const candidates = buildCandidates(closetCandidates(data.items), weather, args.preferredItemsId);
+    const previous = new Set(data.previousOutfits.map(outfitSignature));
+    const fallback = ruleBasedOutfit(candidates, previous);
+    if (!fallback) throw new ConvexError("No new complete outfit is available for this weather. Add a suitable top and bottom, or a full-body item, and try again.");
+
+    const eligibleIds = new Set(Object.values(candidates).flat().map(item => item.id));
+    const prompt = generateOutfitPrompt(candidates, {
+      occasion, weather,
+      preferredItemsId: args.preferredItemsId.filter(id => eligibleIds.has(id)),
+      previousOutfits: data.previousOutfits,
+    });
+    let source: GeneratedOutfit["source"] = "rules";
+    let selection = fallback;
     try {
-      // Validate input parameters
-      if (!items || items.length === 0) {
-        console.warn("No items provided for outfit generation");
-        return null;
-      }
-
-      // Map items to match ItemForAI interface
-      const mappedItems: ItemForAI[] = items.map(item => ({
-        id: item._id,
-        category: item.category,
-        subcategory: item.subcategory,
-        color: item.color,
-        caption: item.caption,
-        style: item.style,
-      }));
-
-      // Build a set of valid item IDs for validation
-      const validItemIds = new Set(mappedItems.map(item => item.id));
-
-      console.log(`Generating outfit for ${mappedItems.length} items`, {
-        occasion: occasion || API_CONSTANTS.DEFAULT_VALUES.OCCASION,
-        weather: weather || API_CONSTANTS.DEFAULT_VALUES.WEATHER,
-        preferredItemsCount: preferredItemsId.length,
-      });
-
-      // Construct the prompt for the AI model
-      const prompt = generateOutfitPrompt(
-        mappedItems,
-        {
-          occasion: occasion || API_CONSTANTS.DEFAULT_VALUES.OCCASION,
-          weather: weather || API_CONSTANTS.DEFAULT_VALUES.WEATHER,
-          preferredItemsId: preferredItemsId || [],
-        }
-      );
-
-      // Initialize OpenAI client
       const openai = new OpenAI({
-        baseURL: process.env.CONVEX_OPENAI_BASE_URL,
-        apiKey: process.env.CONVEX_OPENAI_API_KEY,
+        ...(process.env.CONVEX_OPENAI_BASE_URL && { baseURL: process.env.CONVEX_OPENAI_BASE_URL }),
+        apiKey: process.env.CONVEX_OPENAI_API_KEY ?? "",
+        timeout: API_CONSTANTS.OPENAI.TIMEOUT,
+        maxRetries: 0, // Exactly one repair attempt for invalid output; no hidden SDK retries.
       });
-
-      // Call OpenAI API with timeout and retry logic
-      const response = await Promise.race([
-        openai.chat.completions.create({
-          model: API_CONSTANTS.OPENAI.MODEL,
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-          max_tokens: 500,
-        }),
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error("OpenAI request timeout")), API_CONSTANTS.OPENAI.TIMEOUT)
-        ),
-      ]);
-
-      // Parse and validate the AI response
-      const responseContent = response.choices[0]?.message?.content;
-      if (!responseContent) {
-        console.error("Empty response from OpenAI");
-        return null;
-      }
-
-      let aiOutfit: Record<string, string>;
-      try {
-        aiOutfit = JSON.parse(responseContent);
-      } catch (parseError) {
-        console.error("Failed to parse OpenAI response:", parseError, {
-          content: responseContent.substring(0, 200),
+      const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [{ role: "user", content: prompt }];
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await openai.chat.completions.create({
+          model: process.env.CONVEX_OPENAI_MODEL || API_CONSTANTS.OPENAI.MODEL,
+          messages, reasoning_effort: "low", max_completion_tokens: 2048,
+          response_format: { type: "json_object" },
         });
-        return null;
+        const content = response.choices[0]?.message?.content ?? "";
+        let parsed: unknown;
+        try { parsed = JSON.parse(content); } catch { parsed = null; }
+        const checked = validateOutfit(parsed, candidates, previous);
+        if (checked.outfit) { selection = checked.outfit; source = "ai"; break; }
+        messages.push({ role: "assistant", content }, { role: "user", content: `Invalid outfit: ${checked.errors.join(" ")} Return a corrected JSON outfit using only the candidates. Do not repeat a previous outfit.` });
       }
-
-      // Validate and filter outfit items
-      const validatedOutfit: Record<string, string> = {};
-      let validItemCount = 0;
-
-      Object.entries(aiOutfit).forEach(([key, itemId]) => {
-        if (typeof itemId === 'string' && validItemIds.has(itemId as any)) {
-          validatedOutfit[key] = itemId;
-          validItemCount++;
-        } else {
-          console.warn(`Invalid item ID in AI response: ${itemId}`);
-        }
-      });
-
-      if (validItemCount === 0) {
-        console.error("No valid items in AI response");
-        return null;
-      }
-
-      console.log(`Generated outfit with ${validItemCount} valid items`);
-      return JSON.stringify(validatedOutfit);
-
-    } catch (error) {
-      console.error("Error generating outfit:", error);
-      
-      // Determine error type for better error handling
-      if (error instanceof Error) {
-        if (error.message.includes("timeout")) {
-          throw new Error(`${ERROR_CODES.AI_GENERATION_FAILED}: Request timeout`);
-        }
-        if (error.message.includes("network")) {
-          throw new Error(`${ERROR_CODES.NETWORK_ERROR}: ${error.message}`);
-        }
-      }
-      
-      throw new Error(`${ERROR_CODES.AI_GENERATION_FAILED}: Failed to generate outfit`);
+    } catch {
+      // Provider/network/quota failures still produce a validated local outfit.
+      console.warn("Outfit model unavailable; using the rule-based candidate selection.");
     }
+    // Both paths go through the same final strict validator.
+    const checked = validateOutfit(selection, candidates, previous);
+    if (!checked.outfit) throw new ConvexError(checked.errors.join(" "));
+    return { outfit: checked.outfit as GeneratedOutfit["outfit"], source, occasion, weather };
   },
 });
