@@ -20,6 +20,7 @@ import type * as items from "../items.js";
 import type * as outfitHistory from "../outfitHistory.js";
 import type * as outfitValidators from "../outfitValidators.js";
 import type * as outfits from "../outfits.js";
+import type * as stylistChat from "../stylistChat.js";
 import type * as users from "../users.js";
 
 /**
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   outfitHistory: typeof outfitHistory;
   outfitValidators: typeof outfitValidators;
   outfits: typeof outfits;
+  stylistChat: typeof stylistChat;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

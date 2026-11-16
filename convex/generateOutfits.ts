@@ -17,7 +17,7 @@ export interface GeneratedOutfit {
 }
 
 export const analyzeOutfit = action({
-  args: { preferredItemsId: v.array(v.string()), occasion: v.optional(v.string()), weather: v.optional(v.string()) },
+  args: { preferredItemsId: v.array(v.string()), occasion: v.optional(v.string()), weather: v.optional(v.string()), instructions: v.optional(v.string()) },
   returns: v.object({ outfit: outfitValidator, source: sourceValidator, occasion: v.string(), weather: v.string() }),
   handler: async (ctx, args): Promise<GeneratedOutfit> => {
     // Never trust client-supplied closet records or cross-user item IDs.
@@ -34,6 +34,7 @@ export const analyzeOutfit = action({
       occasion, weather,
       preferredItemsId: args.preferredItemsId.filter(id => eligibleIds.has(id)),
       previousOutfits: data.previousOutfits,
+      ...(args.instructions && { instructions: args.instructions.slice(0, 6000) }),
     });
     let source: GeneratedOutfit["source"] = "rules";
     let selection = fallback;

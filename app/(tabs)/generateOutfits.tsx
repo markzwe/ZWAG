@@ -69,8 +69,8 @@ export default function GenerateOutfits() {
     }
   }, []);
 
-  const handleCustomGenerate = () => {
-    router.push(ROUTES.SCREENS.GENERATE_OUTFIT.ASK_OCCASION);
+  const handleCustomAIGenerate = () => {
+    router.push(ROUTES.SCREENS.GENERATE_OUTFIT.CHAT);
   };
 
   if (loadingState === 'loading') {
@@ -115,23 +115,19 @@ export default function GenerateOutfits() {
     </Card>
   );
 
-  const renderHeader = () => (
-    <Header />
-  );
-
   const renderFooter = () => (
     <View style={styles.customSection}>
-      <Text style={styles.sectionTitle}>Need More Control?</Text>
+      <Text style={styles.sectionTitle}>Talk It Through</Text>
       <Card variant="outlined" style={styles.customCard}>
         <View style={styles.customContent}>
-          <Ionicons name="settings-outline" size={32} color={COLORS.textSecondary} />
-          <Text style={styles.customTitle}>Custom Generation</Text>
+          <Ionicons name="chatbubbles-outline" size={32} color={COLORS.textSecondary} />
+          <Text style={styles.customTitle}>Your AI Stylist</Text>
           <Text style={styles.customSubtitle}>
-            Choose specific occasion, weather, and preferences
+            Ask for outfit ideas, refine a look, or plan what to wear.
           </Text>
           <Button
-            title="Customize Everything"
-            onPress={handleCustomGenerate}
+            title="Chat with ZWAG"
+            onPress={handleCustomAIGenerate}
             variant="outline"
             size="sm"
             style={styles.customButton}

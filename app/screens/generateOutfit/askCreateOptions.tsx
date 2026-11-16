@@ -71,7 +71,7 @@
 //             !selected && styles.continueButtonDisabled,
 //           ]}
 //           onPress={() =>
-//             selected && router.push("/screens/generateOutfit/askOccasion")
+//             selected && router.push("/screens/generateOutfit/chat")
 //           }
 //           disabled={!selected}
 //         >

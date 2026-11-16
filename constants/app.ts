@@ -91,7 +91,7 @@ export const ROUTES = {
     },
     GENERATE_OUTFIT: {
       AI_GENERATE: "/screens/generateOutfit/aiGenerateOutfit",
-      ASK_OCCASION: "/screens/generateOutfit/askOccasion",
+      CHAT: "/screens/generateOutfit/chat",
     },
   },
   AUTH: {

@@ -32,3 +32,17 @@ full-body garments and multiple accessories.
 Run `npm test` for synthetic-data regression tests. They do not read wardrobe
 records or spend API credits. Deploy schema/functions to the development backend
 with `npx convex dev`; this feature does not require a native rebuild.
+
+## Conversational stylist
+
+The custom-generation button opens `/screens/generateOutfit/chat`; the old
+occasion questionnaire screen has been removed. `stylistChat:sendMessage` accepts
+a bounded conversation and remembers occasion/weather context between turns.
+It answers general style questions without inventing owned garments. Outfit
+requests ask about weather if needed, then call the existing validated generator
+with the recent conversation as preferences. The chat records accepted outfit
+cards in history and uses the same save/dislike/Try Another feedback mutations.
+
+Messages stay in local screen state and clear on a new chat or leaving the screen;
+outfit history and feedback remain persisted per user. Provider failures leave a
+retry control for the same turn, rather than pretending an AI reply succeeded.
