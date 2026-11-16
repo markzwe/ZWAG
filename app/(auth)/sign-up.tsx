@@ -72,11 +72,11 @@ export default function SignUpScreen() {
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
         await updateStylePreferences({
-          stylePreferences: preferences.styles,
-          favoriteColors: preferences.colors,
+          stylePreferences: [],
+          favoriteColors: [],
           height: preferences.height,
           weight: preferences.weight,
-          fitPreference: preferences.fit,
+          fitPreference: "",
           avoidClothing: preferences.avoidClothing,
           preferredOccasions: preferences.occasions,
           preferredBrands: preferences.brands,
@@ -90,11 +90,11 @@ export default function SignUpScreen() {
         try {
           await new Promise((resolve) => setTimeout(resolve, 2000));
           await updateStylePreferences({
-            stylePreferences: preferences.styles,
-            favoriteColors: preferences.colors,
+            stylePreferences: [],
+            favoriteColors: [],
             height: preferences.height,
             weight: preferences.weight,
-            fitPreference: preferences.fit,
+            fitPreference: "",
             avoidClothing: preferences.avoidClothing,
             preferredOccasions: preferences.occasions,
             preferredBrands: preferences.brands,

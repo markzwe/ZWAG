@@ -4,12 +4,7 @@ import {
   METRIC_HEIGHTS,
   METRIC_WEIGHTS,
 } from "@/constants/measurements";
-import {
-  FIT_OPTIONS,
-  OCCASION_OPTIONS,
-  ONBOARDING_COLOR_OPTIONS,
-  STYLE_OPTIONS,
-} from "@/constants/preferences";
+import { OCCASION_OPTIONS } from "@/constants/preferences";
 import { COLORS, SPACING } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 import { useStylePreferences } from "@/providers/StylePreferencesProvider";
@@ -21,7 +16,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -33,12 +27,7 @@ import {
   View,
 } from "react-native";
 
-const { width } = Dimensions.get("window");
-
 interface StylePreferences {
-  styles: string[];
-  colors: string[];
-  fit: string;
   avoidClothing: string;
   occasions: string[];
   brands: string;
@@ -67,9 +56,6 @@ export default function StyleQuestionnaire() {
   const [isPressedSubmit, setIsPressedSubmit] = useState(false);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
   const [preferences, setPreferences] = useState<StylePreferences>({
-    styles: [],
-    colors: [],
-    fit: "",
     avoidClothing: "",
     occasions: [],
     brands: "",
@@ -80,25 +66,7 @@ export default function StyleQuestionnaire() {
     referralCode: "",
   });
 
-  const totalSteps = 8;
-
-  const handleStyleSelect = (style: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      styles: prev.styles.includes(style)
-        ? prev.styles.filter((s) => s !== style)
-        : [...prev.styles, style],
-    }));
-  };
-
-  const handleColorSelect = (color: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      colors: prev.colors.includes(color)
-        ? prev.colors.filter((c) => c !== color)
-        : [...prev.colors, color],
-    }));
-  };
+  const totalSteps = 5;
 
   const handleOccasionSelect = (occasion: string) => {
     setPreferences((prev) => ({
@@ -176,11 +144,11 @@ export default function StyleQuestionnaire() {
       if (isSignedIn && user) {
         try {
           await updateStylePreferences({
-            stylePreferences: preferences.styles,
-            favoriteColors: preferences.colors,
+            stylePreferences: [],
+            favoriteColors: [],
             height: preferences.height,
             weight: preferences.weight,
-            fitPreference: preferences.fit,
+            fitPreference: "",
             avoidClothing: preferences.avoidClothing,
             preferredOccasions: preferences.occasions,
             preferredBrands: preferences.brands,
@@ -239,20 +207,14 @@ export default function StyleQuestionnaire() {
   const canProceed = () => {
     switch (currentStep) {
       case 1:
-        return preferences.styles.length > 0;
-      case 2:
-        return preferences.colors.length > 0;
-      case 3:
-        return true; // Fit is optional
-      case 4:
         return true; // Avoid clothing is optional
-      case 5:
+      case 2:
         return preferences.occasions.length > 0;
-      case 6:
+      case 3:
         return true; // Seasonal preference
-      case 7:
+      case 4:
         return preferences.height && preferences.weight;
-      case 8:
+      case 5:
         return isInviteCodeValid; // Require valid invite code
       default:
         return false;
@@ -262,116 +224,6 @@ export default function StyleQuestionnaire() {
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.questionTitle}>What's your typical style?</Text>
-            <Text style={styles.questionSubtitle}>Choose all that apply</Text>
-            <View style={styles.optionsGrid}>
-              {STYLE_OPTIONS.map((style) => (
-                <TouchableOpacity
-                  key={style}
-                  style={[
-                    styles.styleOption,
-                    preferences.styles.includes(style) && styles.selectedOption,
-                  ]}
-                  onPress={() => handleStyleSelect(style)}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      preferences.styles.includes(style) && styles.selectedText,
-                    ]}
-                  >
-                    {style}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.whyText}>
-              💡 Why: This helps filter combinations by vibe and avoid
-              mismatches in AI outfit generation.
-            </Text>
-          </View>
-        );
-
-      case 2:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.questionTitle}>
-              What colors do you usually wear?
-            </Text>
-            <Text style={styles.questionSubtitle}>
-              Select your preferred colors
-            </Text>
-            <View style={styles.colorGrid}>
-              {ONBOARDING_COLOR_OPTIONS.map(
-                (colorOption: { name: string; color: string }) => (
-                  <TouchableOpacity
-                    key={colorOption.name}
-                    style={[
-                      styles.colorOption,
-                      preferences.colors.includes(colorOption.name) &&
-                        styles.selectedColorOption,
-                    ]}
-                    onPress={() => handleColorSelect(colorOption.name)}
-                  >
-                    <View
-                      style={[
-                        styles.colorSwatch,
-                        { backgroundColor: colorOption.color },
-                        colorOption.name === "White" && {
-                          borderWidth: 1,
-                          borderColor: COLORS.border,
-                        },
-                      ]}
-                    />
-                    <Text style={styles.colorText}>{colorOption.name}</Text>
-                  </TouchableOpacity>
-                )
-              )}
-            </View>
-            <Text style={styles.whyText}>
-              💡 Why: Avoid recommending clashing palettes or colors users hate.
-            </Text>
-          </View>
-        );
-
-      case 3:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.questionTitle}>
-              What's your go-to fit for clothes?
-            </Text>
-            <Text style={styles.questionSubtitle}>Optional - choose one</Text>
-            <View style={styles.optionsContainer}>
-              {FIT_OPTIONS.map((fit) => (
-                <TouchableOpacity
-                  key={fit}
-                  style={[
-                    styles.fitOption,
-                    preferences.fit === fit && styles.selectedOption,
-                  ]}
-                  onPress={() => setPreferences((prev) => ({ ...prev, fit }))}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      preferences.fit === fit && styles.selectedText,
-                    ]}
-                  >
-                    {fit}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.whyText}>
-              💡 Why: This affects silhouette coordination (e.g., pairing baggy
-              tops with tapered bottoms).
-            </Text>
-          </View>
-        );
-
-      case 4:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.questionTitle}>
@@ -396,7 +248,7 @@ export default function StyleQuestionnaire() {
           </View>
         );
 
-      case 5:
+      case 2:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.questionTitle}>
@@ -432,7 +284,7 @@ export default function StyleQuestionnaire() {
           </View>
         );
 
-      case 6:
+      case 3:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.questionTitle}>
@@ -488,7 +340,7 @@ export default function StyleQuestionnaire() {
           </View>
         );
 
-      case 7:
+      case 4:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.questionTitle}>Height & Weight</Text>
@@ -585,7 +437,7 @@ export default function StyleQuestionnaire() {
 
       //  In future, this case will be referral code step.
       // For now, this is invite code & required to complete the onboarding flow
-      case 8:
+      case 5:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.questionTitle}>Invite Code</Text>
@@ -760,21 +612,6 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
   },
-  optionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-  styleOption: {
-    width: (width - 60) / 2,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    marginBottom: 12,
-    alignItems: "center",
-  },
   selectedOption: {
     borderColor: COLORS.textPrimary,
     backgroundColor: COLORS.textPrimary,
@@ -788,47 +625,8 @@ const styles = StyleSheet.create({
   selectedText: {
     color: COLORS.pureWhite,
   },
-  colorGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 24,
-  },
-  colorOption: {
-    width: (width - 80) / 3,
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
-    marginBottom: 16,
-  },
-  selectedColorOption: {
-    borderColor: COLORS.textPrimary,
-    backgroundColor: "#f8f9fa",
-  },
-  colorSwatch: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginBottom: 8,
-  },
-  colorText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: COLORS.textPrimary,
-    textAlign: "center",
-  },
   optionsContainer: {
     marginBottom: 24,
-  },
-  fitOption: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    marginBottom: 12,
-    alignItems: "center",
   },
   occasionOption: {
     padding: 16,

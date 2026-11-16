@@ -153,8 +153,8 @@ export default function Menu() {
       items: [
         {
           icon: "color-palette-outline" as const,
-          title: "Style Preferences",
-          subtitle: "Customize your fashion style",
+          title: "Outfit Preferences",
+          subtitle: "Customize occasions and clothing preferences",
           onPress: () => router.push("/screens/menuScreens/stylePreferences"),
         },
       ],

@@ -1,9 +1,6 @@
 import React, { createContext, ReactNode, useContext, useState } from "react";
 
 interface StylePreferences {
-  styles: string[];
-  colors: string[];
-  fit: string;
   avoidClothing: string;
   occasions: string[];
   brands: string;

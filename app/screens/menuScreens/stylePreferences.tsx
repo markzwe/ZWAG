@@ -6,7 +6,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Dimensions,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -15,37 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-const { width } = Dimensions.get("window");
-
-const STYLE_OPTIONS = [
-  "Casual",
-  "Streetwear",
-  "Minimalist",
-  "Sporty",
-  "Business / Smart Casual",
-  "Vintage",
-  "Trendy",
-  "Preppy",
-];
-
-const COLOR_OPTIONS = [
-  { name: "Black", color: "#000000" },
-  { name: "White", color: "#FFFFFF" },
-  { name: "Gray", color: "#808080" },
-  { name: "Navy", color: "#000080" },
-  { name: "Earth tones", color: "#8B4513" },
-  { name: "Brights", color: "#FF4500" },
-  { name: "Neutrals", color: "#F5F5DC" },
-];
-
-const FIT_OPTIONS = [
-  "Oversized",
-  "Slim / Fitted",
-  "Relaxed",
-  "Classic",
-  "Depends on the piece",
-];
 
 const OCCASION_OPTIONS = [
   "School / Campus",
@@ -68,9 +36,6 @@ export default function StylePreferences() {
 
   // Local state for editing
   const [preferences, setPreferences] = useState({
-    styles: [] as string[],
-    colors: [] as string[],
-    fit: "",
     avoidClothing: "",
     occasions: [] as string[],
     seasonalOutfits: false,
@@ -82,9 +47,6 @@ export default function StylePreferences() {
   useEffect(() => {
     if (userPreferences) {
       setPreferences({
-        styles: userPreferences.stylePreferences || [],
-        colors: userPreferences.favoriteColors || [],
-        fit: userPreferences.fitPreference || "",
         avoidClothing: userPreferences.avoidClothing || "",
         occasions: userPreferences.preferredOccasions || [],
         seasonalOutfits: userPreferences.seasonalOutfits || false,
@@ -93,24 +55,6 @@ export default function StylePreferences() {
       });
     }
   }, [userPreferences]);
-
-  const handleStyleSelect = (style: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      styles: prev.styles.includes(style)
-        ? prev.styles.filter((s) => s !== style)
-        : [...prev.styles, style],
-    }));
-  };
-
-  const handleColorSelect = (color: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      colors: prev.colors.includes(color)
-        ? prev.colors.filter((c) => c !== color)
-        : [...prev.colors, color],
-    }));
-  };
 
   const handleOccasionSelect = (occasion: string) => {
     setPreferences((prev) => ({
@@ -125,18 +69,18 @@ export default function StylePreferences() {
     setIsSaving(true);
     try {
       await updateStylePreferences({
-        stylePreferences: preferences.styles,
-        favoriteColors: preferences.colors,
+        stylePreferences: [],
+        favoriteColors: [],
         height: preferences.height,
         weight: preferences.weight,
-        fitPreference: preferences.fit,
+        fitPreference: "",
         avoidClothing: preferences.avoidClothing,
         preferredOccasions: preferences.occasions,
         preferredBrands: "", // Keep existing or empty
         seasonalOutfits: preferences.seasonalOutfits,
       });
 
-      Alert.alert("Success", "Your style preferences have been updated!", [
+      Alert.alert("Success", "Your outfit preferences have been updated!", [
         {
           text: "OK",
           onPress: () => router.back(),
@@ -170,7 +114,7 @@ export default function StylePreferences() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.offWhite} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Style Preferences</Text>
+        <Text style={styles.headerTitle}>Outfit Preferences</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -179,110 +123,6 @@ export default function StylePreferences() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Style Preferences */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Style</Text>
-          <Text style={styles.sectionSubtitle}>Choose all that apply</Text>
-          <View style={styles.optionsGrid}>
-            {STYLE_OPTIONS.map((style) => (
-              <TouchableOpacity
-                key={style}
-                style={[
-                  styles.styleOption,
-                  preferences.styles.includes(style) && styles.selectedOption,
-                ]}
-                onPress={() => handleStyleSelect(style)}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    preferences.styles.includes(style) && styles.selectedText,
-                  ]}
-                >
-                  {style}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Divider */}
-        <View style={styles.divider} />
-
-        {/* Color Preferences */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Favorite Colors</Text>
-          <Text style={styles.sectionSubtitle}>
-            Select your preferred colors
-          </Text>
-          <View style={styles.colorGrid}>
-            {COLOR_OPTIONS.map((colorOption) => (
-              <TouchableOpacity
-                key={colorOption.name}
-                style={[
-                  styles.colorOption,
-                  preferences.colors.includes(colorOption.name) &&
-                    styles.selectedColorOption,
-                ]}
-                onPress={() => handleColorSelect(colorOption.name)}
-              >
-                <View
-                  style={[
-                    styles.colorSwatch,
-                    { backgroundColor: colorOption.color },
-                    colorOption.name === "White" && {
-                      borderWidth: 1,
-                      borderColor: COLORS.border,
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.colorText,
-                    preferences.colors.includes(colorOption.name) &&
-                      styles.selectedText,
-                  ]}
-                >
-                  {colorOption.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Divider */}
-        <View style={styles.divider} />
-
-        {/* Fit Preference */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferred Fit</Text>
-          <Text style={styles.sectionSubtitle}>Choose your go-to fit</Text>
-          <View style={styles.optionsContainer}>
-            {FIT_OPTIONS.map((fit) => (
-              <TouchableOpacity
-                key={fit}
-                style={[
-                  styles.fitOption,
-                  preferences.fit === fit && styles.selectedOption,
-                ]}
-                onPress={() => setPreferences((prev) => ({ ...prev, fit }))}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    preferences.fit === fit && styles.selectedText,
-                  ]}
-                >
-                  {fit}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Divider */}
-        <View style={styles.divider} />
-
         {/* Occasions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Occasions</Text>
@@ -495,20 +335,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: SPACING.md,
   },
-  optionsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  styleOption: {
-    width: (width - 48) / 2,
-    padding: SPACING.sm,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.sm,
-    alignItems: "center",
-  },
   selectedOption: {
     borderColor: COLORS.textPrimary,
     backgroundColor: COLORS.textPrimary,
@@ -522,45 +348,7 @@ const styles = StyleSheet.create({
   selectedText: {
     color: COLORS.pureWhite,
   },
-  colorGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  colorOption: {
-    width: (width - 64) / 3,
-    alignItems: "center",
-    padding: SPACING.sm,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "transparent",
-    marginBottom: SPACING.sm,
-  },
-  selectedColorOption: {
-    borderColor: COLORS.textPrimary,
-    backgroundColor: "#f8f9fa",
-  },
-  colorSwatch: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    marginBottom: SPACING.xs,
-  },
-  colorText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: COLORS.textPrimary,
-    textAlign: "center",
-  },
   optionsContainer: {},
-  fitOption: {
-    padding: SPACING.sm,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.sm,
-    alignItems: "center",
-  },
   occasionOption: {
     padding: SPACING.sm,
     borderRadius: 12,

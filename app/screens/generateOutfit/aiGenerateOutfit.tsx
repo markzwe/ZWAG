@@ -21,7 +21,7 @@ type Suggestion = GeneratedOutfit & { historyId: Id<"outfitHistory"> };
 export default function AiGenerateOutfit() {
   const params = useLocalSearchParams<{ selectedIds?: string; occasion?: string; weather?: string }>();
   const preferred = typeof params.selectedIds === "string" ? params.selectedIds : "";
-  const occasion = typeof params.occasion === "string" ? params.occasion : "Casual";
+  const occasion = typeof params.occasion === "string" ? params.occasion : "";
   const weather = typeof params.weather === "string" ? params.weather : "Sunny";
   const insets = useSafeAreaInsets();
   const generateOutfit = useAction(api.generateOutfits.analyzeOutfit);
@@ -38,6 +38,7 @@ export default function AiGenerateOutfit() {
   const mounted = useRef(true);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
+  // Generate an outfit from the selected items and context, then record it before display.
   const requestSuggestion = useCallback(async (): Promise<Suggestion> => {
     const result = await generateOutfit({ preferredItemsId: preferred.split(",").filter(Boolean), occasion, weather });
     if (!mounted.current) throw new Error("Generation screen closed");
@@ -64,6 +65,7 @@ export default function AiGenerateOutfit() {
     return () => { active = false; };
   }, [requestKey, requestSuggestion]);
 
+  // Handle another 
   const handleAnother = useCallback(async (action: "try_another" | "dislike") => {
     if (busy.current) return;
     busy.current = true;
