@@ -64,7 +64,6 @@ export const API_CONSTANTS = {
   },
   DEFAULT_VALUES: {
     OCCASION: "Casual",
-    WEATHER: "Sunny",
   },
 } as const;
 
@@ -90,7 +89,6 @@ export const ROUTES = {
       ADD_ITEM: "/screens/closet/addItem",
     },
     GENERATE_OUTFIT: {
-      AI_GENERATE: "/screens/generateOutfit/aiGenerateOutfit",
       CHAT: "/screens/generateOutfit/chat",
     },
   },
@@ -111,43 +109,4 @@ export const LAYOUT_CONSTANTS = {
   BUTTON_HEIGHT: 120,
   CARD_MIN_HEIGHT: 120,
   ICON_CONTAINER_SIZE: 48,
-} as const;
-
-// ==================== OUTFIT GENERATION CONSTANTS ====================
-export const OUTFIT_GENERATION = {
-  QUICK_OPTIONS: [
-    {
-      id: 'smart-today',
-      title: 'Smart Generate',
-      subtitle: 'AI picks based on weather & calendar',
-      icon: 'sparkles',
-      occasion: 'Smart',
-      weather: 'auto',
-    },
-    {
-      id: 'work-ready',
-      title: 'Work Ready',
-      subtitle: 'Professional & polished',
-      icon: 'briefcase',
-      occasion: 'Work',
-      weather: 'indoor',
-    },
-    {
-      id: 'casual-comfort',
-      title: 'Casual Comfort',
-      subtitle: 'Relaxed & stylish',
-      icon: 'cafe',
-      occasion: 'Casual',
-      weather: 'mild',
-    },
-    {
-      id: 'date-night',
-      title: 'Date Night',
-      subtitle: 'Impressive & confident',
-      icon: 'heart',
-      occasion: 'Date',
-      weather: 'evening',
-    },
-  ],
-  DEFAULT_WEATHER_FALLBACK: 'Sunny',
 } as const;

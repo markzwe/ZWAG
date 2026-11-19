@@ -37,7 +37,10 @@ export default function ClerkandConvexProvider({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider tokenCache={tokenCache} publishableKey={PUBLISHABLE_KEY}>
+    <ClerkProvider
+      {...(tokenCache && { tokenCache })}
+      publishableKey={PUBLISHABLE_KEY!}
+    >
       <ConvexProviderWithClerk useAuth={useAuth} client={convex}>
         <ClerkLoaded>
           <AppDataLoader>{children}</AppDataLoader>

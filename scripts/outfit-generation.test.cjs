@@ -38,7 +38,7 @@ function generation({ items = closet, previous = [], reply = () => response(topB
     } } };
   }
   const { analyzeOutfit } = load('convex/generateOutfits.ts', FakeOpenAI);
-  const run = args => analyzeOutfit._handler({ runQuery: async () => ({ items, previousOutfits: previous }) }, { preferredItemsId: [], weather: 'cold', ...args });
+  const run = args => analyzeOutfit._handler({ runQuery: async () => ({ items, previousOutfits: previous }) }, { preferredItemsId: [], ...args });
   return { run, requests, clients };
 }
 
@@ -62,21 +62,20 @@ function database(items = closet, subject = 'clerk1') {
   };
   return { ctx, tables };
 }
-const show = (ctx, outfit = topBottom, eventId = 'shown-1') => historyApi.recordShown._handler(ctx, { outfit, source: 'rules', occasion: 'Casual', weather: 'cold', eventId });
+const show = (ctx, outfit = topBottom, eventId = 'shown-1') => historyApi.recordShown._handler(ctx, { outfit, source: 'rules', occasion: 'Casual', eventId });
 
 // All data in these tests is synthetic; no deployment records or paid API calls.
-test('candidates filter categories and weather before prompting', () => {
-  const items = [...closet, item('shorts', 'Bottoms', 'Shorts'), item('parka', 'Outerwear', 'Parkas'), item('tank', 'Tops', 'Tank Tops'), item('unknown', 'Mystery', 'Unknown')];
-  const cold = rules.buildCandidates(asCandidates(items), 'Cold');
-  assert.deepEqual(plain(cold.bottom.map(i => i.id)), ['b1', 'b2']);
-  assert.equal(cold.top.some(i => i.id === 'tank'), false);
-  const hot = rules.buildCandidates(asCandidates(items), 'summer');
-  assert.equal(hot.outerwear.length, 0);
-  assert.equal(Object.values(hot).flat().some(i => i.id === 'unknown'), false);
+test('candidates group categories, retain all garment types, deduplicate, and prioritize preferred IDs', () => {
+  const items = [...closet, closet[0], item('shorts', 'Bottoms', 'Shorts'), item('parka', 'Outerwear', 'Parkas'), item('tank', 'Tops', 'Tank Tops'), item('unknown', 'Mystery', 'Unknown')];
+  const candidates = rules.buildCandidates(asCandidates(items), ['t2']);
+  assert.deepEqual(plain(candidates.top.map(i => i.id)), ['t2', 't1', 'tank']);
+  assert.deepEqual(plain(candidates.bottom.map(i => i.id)), ['b1', 'b2', 'shorts']);
+  assert.equal(candidates.outerwear[0].id, 'parka');
+  assert.equal(Object.values(candidates).flat().some(i => i.id === 'unknown'), false);
 });
 
 test('validator rejects missing IDs, wrong slots, duplicates, incomplete outfits and unknown slots', () => {
-  const candidates = rules.buildCandidates(asCandidates(closet), 'cool');
+  const candidates = rules.buildCandidates(asCandidates(closet));
   for (const invalid of [null, [], { top: 'missing', bottom: 'b1' }, { top: 'b1', bottom: 't1' }, { top: 't1', bottom: 't1' }, { top: 't1' }, { ...topBottom, hat: 'x' }, { ...topBottom, accessories: 'x' }, { ...topBottom, accessories: [] }]) {
     assert.ok(rules.validateOutfit(invalid, candidates).errors.length, JSON.stringify(invalid));
   }
@@ -84,14 +83,14 @@ test('validator rejects missing IDs, wrong slots, duplicates, incomplete outfits
 });
 
 test('full-body outfits are valid alone, but cannot be mixed with separates', () => {
-  const candidates = rules.buildCandidates(asCandidates([...closet, item('dress', 'Full Body', 'Dresses')]), 'warm');
+  const candidates = rules.buildCandidates(asCandidates([...closet, item('dress', 'Full Body', 'Dresses')]));
   assert.equal(rules.validateOutfit({ fullBody: 'dress' }, candidates).errors.length, 0);
   assert.ok(rules.validateOutfit({ ...topBottom, fullBody: 'dress' }, candidates).errors.length);
 });
 
 test('accessories are arrays, unique across all slots, limited to five, and order-independent in history', () => {
   const items = [...closet, ...Array.from({ length: 6 }, (_, i) => item(`a${i}`, 'Accessories', 'Watches'))];
-  const candidates = rules.buildCandidates(asCandidates(items), 'cool');
+  const candidates = rules.buildCandidates(asCandidates(items));
   assert.ok(rules.validateOutfit({ ...topBottom, accessories: ['a1', 'a1'] }, candidates).errors.length);
   assert.ok(rules.validateOutfit({ ...topBottom, accessories: ['t1'] }, candidates).errors.length);
   assert.ok(rules.validateOutfit({ ...topBottom, accessories: ['a0', 'a1', 'a2', 'a3', 'a4', 'a5'] }, candidates).errors.length);
@@ -103,6 +102,7 @@ test('invalid model output is retried exactly once with validation errors, then 
   const { run, requests, clients } = generation({ reply: (_request, n) => response(n === 1 ? { top: 'b1', bottom: 'b1' } : topBottom) });
   const result = await run();
   assert.equal(result.source, 'ai');
+  assert.equal(Object.hasOwn(result, 'weather'), false);
   assert.equal(requests.length, 2);
   assert.match(requests[1].messages.at(-1).content, /Invalid outfit:.*eligible top candidate/);
   assert.equal(clients[0].maxRetries, 0);
@@ -111,18 +111,18 @@ test('invalid model output is retried exactly once with validation errors, then 
   assert.equal(requests[0].max_completion_tokens, 2048);
 });
 
-test('malformed and still-invalid model output falls back to a complete weather-eligible outfit', async () => {
+test('malformed and still-invalid model output falls back to a complete category-valid outfit', async () => {
   const { run, requests } = generation({ reply: (_request, n) => response(n === 1 ? 'bad json' : { top: 'missing' }) });
   const result = await run();
   assert.equal(result.source, 'rules');
   assert.equal(requests.length, 2);
-  assert.equal(rules.validateOutfit(result.outfit, rules.buildCandidates(asCandidates(closet), 'cold')).errors.length, 0);
+  assert.equal(rules.validateOutfit(result.outfit, rules.buildCandidates(asCandidates(closet))).errors.length, 0);
 });
 
 test('the prompt excludes ineligible items and includes the do-not-repeat list', async () => {
-  const { run, requests } = generation({ items: [...closet, item('excluded-shorts', 'Bottoms', 'Shorts')], previous: [topBottom], reply: () => response({ top: 't2', bottom: 'b1' }) });
+  const { run, requests } = generation({ items: [...closet, item('excluded-unknown', 'Mystery', 'Unknown')], previous: [topBottom], reply: () => response({ top: 't2', bottom: 'b1' }) });
   await run();
-  assert.doesNotMatch(requests[0].messages[0].content, /excluded-shorts/);
+  assert.doesNotMatch(requests[0].messages[0].content, /excluded-unknown/);
   assert.match(requests[0].messages[0].content, /previously shown.*t1.*b1/);
 });
 
@@ -149,7 +149,7 @@ test('an incomplete or exhausted closet returns an actionable error, never an in
 });
 
 test('fallback searches accessory combinations rather than falsely reporting exhaustion', () => {
-  const candidates = rules.buildCandidates(asCandidates([closet[0], closet[2], item('a1', 'Accessories', 'Watches'), item('a2', 'Accessories', 'Hats')]), 'cool');
+  const candidates = rules.buildCandidates(asCandidates([closet[0], closet[2], item('a1', 'Accessories', 'Watches'), item('a2', 'Accessories', 'Hats')]));
   const previous = new Set([topBottom, { ...topBottom, accessories: ['a1'] }, { ...topBottom, accessories: ['a2'] }].map(rules.outfitSignature));
   const last = rules.ruleBasedOutfit(candidates, previous);
   assert.deepEqual(plain(last.accessories), ['a1', 'a2']);
@@ -217,9 +217,9 @@ test('persisted shown history changes the next generation across requests', asyn
   class RepeatingModel { chat = { completions: { create: async () => response(topBottom) } }; }
   const action = load('convex/generateOutfits.ts', RepeatingModel).analyzeOutfit;
   const actionContext = { runQuery: () => historyApi.generationContext._handler(ctx, {}) };
-  const first = await action._handler(actionContext, { preferredItemsId: [], weather: 'cold' });
+  const first = await action._handler(actionContext, { preferredItemsId: [] });
   await historyApi.recordShown._handler(ctx, { ...first, eventId: 'display-first' });
-  const second = await action._handler(actionContext, { preferredItemsId: [], weather: 'cold' });
+  const second = await action._handler(actionContext, { preferredItemsId: [] });
   await historyApi.recordShown._handler(ctx, { ...second, eventId: 'display-second' });
   assert.notEqual(rules.outfitSignature(first.outfit), rules.outfitSignature(second.outfit));
   assert.equal(tables.outfitHistory.length, 2);
@@ -244,4 +244,14 @@ test('a different user cannot save someone else’s shown outfit', async () => {
   await assert.rejects(outfitsApi.saveOutfit._handler(other.ctx, { historyId, eventId: 'save-other' }), /not found/);
   assert.equal(other.tables.outfitFeedback.length, 0);
   assert.equal(other.tables.outfits.length, 0);
+});
+
+test('legacy weather on history does not block saving after weather removal', async () => {
+  const { ctx, tables } = database();
+  const historyId = await show(ctx);
+  assert.equal(Object.hasOwn(tables.outfitHistory[0], 'weather'), false);
+  tables.outfitHistory[0].weather = 'cold';
+  const savedId = await outfitsApi.saveOutfit._handler(ctx, { historyId, eventId: 'legacy-save' });
+  assert.ok(savedId);
+  assert.equal(tables.outfits.length, 1);
 });

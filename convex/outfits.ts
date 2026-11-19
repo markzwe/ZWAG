@@ -15,7 +15,7 @@ export const saveOutfit = mutation({
       return previous.savedOutfitId;
     }
     const items = await ctx.db.query("items").withIndex("by_userId", q => q.eq("userId", user._id)).collect();
-    const checked = validateOutfit(history.outfit, buildCandidates(closetCandidates(items), history.weather));
+    const checked = validateOutfit(history.outfit, buildCandidates(closetCandidates(items)));
     if (!checked.outfit) throw new ConvexError(checked.errors.join(" "));
     const outfit = history.outfit;
     const outfitId = await ctx.db.insert("outfits", {

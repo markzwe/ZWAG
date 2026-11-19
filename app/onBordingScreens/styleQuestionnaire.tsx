@@ -32,7 +32,6 @@ interface StylePreferences {
   occasions: string[];
   brands: string;
 
-  seasonalOutfits: boolean;
   height: string;
   weight: string;
   isMetric: boolean;
@@ -59,14 +58,13 @@ export default function StyleQuestionnaire() {
     avoidClothing: "",
     occasions: [],
     brands: "",
-    seasonalOutfits: false,
     height: "",
     weight: "",
     isMetric: false,
     referralCode: "",
   });
 
-  const totalSteps = 5;
+  const totalSteps = 4;
 
   const handleOccasionSelect = (occasion: string) => {
     setPreferences((prev) => ({
@@ -152,7 +150,6 @@ export default function StyleQuestionnaire() {
             avoidClothing: preferences.avoidClothing,
             preferredOccasions: preferences.occasions,
             preferredBrands: preferences.brands,
-            seasonalOutfits: preferences.seasonalOutfits,
           });
           console.log("Style Preferences saved to database");
           saveOnBoardingStatus();
@@ -211,10 +208,8 @@ export default function StyleQuestionnaire() {
       case 2:
         return preferences.occasions.length > 0;
       case 3:
-        return true; // Seasonal preference
-      case 4:
         return preferences.height && preferences.weight;
-      case 5:
+      case 4:
         return isInviteCodeValid; // Require valid invite code
       default:
         return false;
@@ -243,7 +238,7 @@ export default function StyleQuestionnaire() {
               numberOfLines={4}
             />
             <Text style={styles.whyText}>
-              💡 Why: Prevents recommending pieces they don't like or wear.
+              💡 Why: Prevents recommending pieces they don&apos;t like or wear.
             </Text>
           </View>
         );
@@ -285,62 +280,6 @@ export default function StyleQuestionnaire() {
         );
 
       case 3:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.questionTitle}>
-              Would you like seasonal outfit previews?
-            </Text>
-            <Text style={styles.questionSubtitle}>
-              We'll adapt recommendations to current weather
-            </Text>
-            <View style={styles.toggleContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.toggleOption,
-                  preferences.seasonalOutfits && styles.selectedOption,
-                ]}
-                onPress={() =>
-                  setPreferences((prev) => ({ ...prev, seasonalOutfits: true }))
-                }
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    preferences.seasonalOutfits && styles.selectedText,
-                  ]}
-                >
-                  Yes, adapt to weather
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.toggleOption,
-                  !preferences.seasonalOutfits && styles.selectedOption,
-                ]}
-                onPress={() =>
-                  setPreferences((prev) => ({
-                    ...prev,
-                    seasonalOutfits: false,
-                  }))
-                }
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    !preferences.seasonalOutfits && styles.selectedText,
-                  ]}
-                >
-                  No, keep it simple
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.whyText}>
-              💡 Why: Prepares them for dynamic, seasonal AI dressing.
-            </Text>
-          </View>
-        );
-
-      case 4:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.questionTitle}>Height & Weight</Text>
@@ -437,7 +376,7 @@ export default function StyleQuestionnaire() {
 
       //  In future, this case will be referral code step.
       // For now, this is invite code & required to complete the onboarding flow
-      case 5:
+      case 4:
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.questionTitle}>Invite Code</Text>
@@ -484,7 +423,7 @@ export default function StyleQuestionnaire() {
                 )}
             </View>
             <Text style={styles.whyText}>
-              Don't have invite code? Please email us at{" "}
+              Don&apos;t have invite code? Please email us at{" "}
               {"zwag.hello@gmail.com"}
             </Text>
           </View>
@@ -629,17 +568,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   occasionOption: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    marginBottom: 12,
-    alignItems: "center",
-  },
-  toggleContainer: {
-    marginBottom: 24,
-  },
-  toggleOption: {
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,

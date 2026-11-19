@@ -22,11 +22,7 @@ interface OnboardingData {
     | "business-casual"
     | "smart-casual"
     | "casual-no-dress-code";
-  weatherType?:
-    | "hot-sunny"
-    | "cold-rainy"
-    | "seasonal-changes"
-    | "mild-year-round";
+
 
   // Screen 5: Frequency Settings
   suggestionFrequency?:
@@ -63,7 +59,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       data.clothingChallenge &&
       data.setupMethod &&
       data.formalityLevel &&
-      data.weatherType &&
       data.suggestionFrequency
   );
 
@@ -89,9 +84,6 @@ export function getSmartDefaults(data: OnboardingData) {
   const defaults = {
     // Default to business casual if no formality specified
     formalityHint: data.formalityLevel || "business-casual",
-
-    // Weather-based suggestions
-    weatherPreference: data.weatherType || "mild-year-round",
 
     // Style preference for AI prompts
     styleDirection: data.defaultStyle || "business-casual",

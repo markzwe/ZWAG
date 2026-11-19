@@ -5,7 +5,7 @@ import CategoryModal from "@/modals/CategoryModal";
 import ColorModal from "@/modals/ColorModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";

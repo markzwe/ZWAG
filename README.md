@@ -104,12 +104,14 @@ npx expo lint
 ```
 
 `npx expo run:ios` (also `npm run ios`) builds and installs the iOS app,
-opens the simulator, and starts Metro. An npm postinstall script backports
-Xcode 27 Device Hub support to the Expo CLI bundled with SDK 53. Older Xcode
-installations keep Expo's normal Simulator support.
-The Podfile also keeps dependency deployment targets at the app's minimum iOS
-version and applies the fmt 11 compatibility fix for recent Apple Clang versions
-whenever pods are installed.
+opens Device Hub on Xcode 27, and starts Metro. The project uses Expo SDK 58,
+React Native 0.88, and React 19.3. SDK 58 provides Device Hub support and the
+scene-based iOS lifecycle directly; the SDK 53 compatibility patches are removed.
+
+Use Node.js 22.13+ on the 22 line or 24.3+ on the 24 line. The native iOS
+minimum is 16.4; automatic clothing-background removal requires iOS 17+.
+After installing this upgrade, rebuild the development app with
+`npx expo run:ios` rather than reopening an SDK 53 binary.
 
 ## 📱 Key Features
 

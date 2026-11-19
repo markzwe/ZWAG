@@ -4,7 +4,6 @@ interface StylePreferences {
   avoidClothing: string;
   occasions: string[];
   brands: string;
-  seasonalOutfits: boolean;
   height: string;
   weight: string;
   referralCode: string;

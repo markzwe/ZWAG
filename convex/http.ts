@@ -63,7 +63,6 @@ http.route({
                 await ctx.runMutation(api.users.createUser, {
                     clerkId: id,
                     email,
-                    birthYear: undefined,
                 });
                 console.log("User created successfully:", { clerkId: id, email });
             } catch (error) {

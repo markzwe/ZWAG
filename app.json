@@ -7,17 +7,16 @@
     "icon": "./assets/images/icon.png",
     "scheme": "zwag",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mark-zwe.ZWAG"
+      "bundleIdentifier": "com.mark-zwe.ZWAG",
+      "appleTeamId": "UCJUW26N3S"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#272B2C"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.markzwe.ZWAG"
     },
     "web": {

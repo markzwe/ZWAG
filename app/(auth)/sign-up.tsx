@@ -80,7 +80,6 @@ export default function SignUpScreen() {
           avoidClothing: preferences.avoidClothing,
           preferredOccasions: preferences.occasions,
           preferredBrands: preferences.brands,
-          seasonalOutfits: preferences.seasonalOutfits,
         });
         clearPreferences(); // Clear from context after saving
         console.log("Style preferences saved successfully");
@@ -98,7 +97,6 @@ export default function SignUpScreen() {
             avoidClothing: preferences.avoidClothing,
             preferredOccasions: preferences.occasions,
             preferredBrands: preferences.brands,
-            seasonalOutfits: preferences.seasonalOutfits,
           });
           clearPreferences();
           console.log("Style preferences saved successfully on retry");
@@ -389,7 +387,7 @@ export default function SignUpScreen() {
         {/* Terms and Conditions */}
         <View style={styles.termsFooter}>
           <Text style={styles.termsText}>
-            By continuing you agree to ZWAG's{" "}
+            By continuing you agree to ZWAG&apos;s{" "}
             <Text
               style={styles.termsLink}
               onPress={() => setTermsModalVisible(true)}

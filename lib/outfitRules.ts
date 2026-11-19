@@ -17,19 +17,13 @@ export function categorySlot(category: string): Slot | undefined {
   return ({ top: "top", tops: "top", bottom: "bottom", bottoms: "bottom", fullbody: "fullBody", shoes: "shoes", outerwear: "outerwear", accessories: "accessories" } as Record<string, Slot>)[normalized];
 }
 
-export function buildCandidates(items: ClosetCandidate[], weather: string, preferred: string[] = []): Candidates {
+export function buildCandidates(items: ClosetCandidate[], preferred: string[] = []): Candidates {
   const candidates: Candidates = { top: [], bottom: [], fullBody: [], shoes: [], outerwear: [], accessories: [] };
-  const cold = /\b(cold|freezing|winter|snow)\b/i.test(weather);
-  const hot = /\b(hot|warm|summer)\b/i.test(weather);
   const seen = new Set<string>();
   for (const item of items) {
     const slot = categorySlot(item.category);
     if (!slot || seen.has(item.id)) continue;
     seen.add(item.id);
-    // Use structured garment type, not free-form captions ("not shorts", etc.).
-    const garment = item.subcategory.toLowerCase().replace(/[-_]/g, " ");
-    if (cold && /\b(shorts|tank tops?|sandals?|rompers?|swim\w*)\b/.test(garment)) continue;
-    if (hot && /\b(parkas?|puffers?|down coats?|winter coats?|heavy coats?|thermal\w*)\b/.test(garment)) continue;
     candidates[slot].push(item);
   }
   for (const slot of SLOTS) {
@@ -62,7 +56,7 @@ export function validateOutfit(value: unknown, candidates: Candidates, previous:
       if (typeof id !== "string" || !id) { errors.push(`${slot} contains an invalid ID.`); continue; }
       if (seen.has(id)) errors.push(`Item ${id} appears more than once.`);
       seen.add(id);
-      if (!candidates[slot].some(item => item.id === id)) errors.push(`Item ${id} is not an eligible ${slot} candidate (missing, wrong category, or unsuitable weather).`);
+      if (!candidates[slot].some(item => item.id === id)) errors.push(`Item ${id} is not an eligible ${slot} candidate (missing or wrong category).`);
     }
     if (slot === "accessories") outfit.accessories = ids;
     else if (typeof raw === "string") outfit[slot] = raw;

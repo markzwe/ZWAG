@@ -13,25 +13,28 @@ export interface GeneratedOutfit {
   outfit: Doc<"outfitHistory">["outfit"];
   source: "ai" | "rules";
   occasion: string;
-  weather: string;
 }
 
 export const analyzeOutfit = action({
-  args: { preferredItemsId: v.array(v.string()), occasion: v.optional(v.string()), weather: v.optional(v.string()), instructions: v.optional(v.string()) },
-  returns: v.object({ outfit: outfitValidator, source: sourceValidator, occasion: v.string(), weather: v.string() }),
+  args: { preferredItemsId: v.array(v.string()), occasion: v.optional(v.string()), instructions: v.optional(v.string()) },
+  returns: v.object({ outfit: outfitValidator, source: sourceValidator, occasion: v.string() }),
   handler: async (ctx, args): Promise<GeneratedOutfit> => {
+    // The server-side generator always starts from the canonical per-user closet state,
+    // never from any client-provided item list. We group closet items into category slots,
+    // seed a rule-based fallback so we always have a valid outfit, and then optionally
+    // ask the model to improve that result while ensuring the final selection still passes
+    // the strict outfit validator and avoids repeating prior outfits.
     // Never trust client-supplied closet records or cross-user item IDs.
     const data: GenerationContext = await ctx.runQuery(internal.outfitHistory.generationContext, {});
     const occasion = args.occasion || API_CONSTANTS.DEFAULT_VALUES.OCCASION;
-    const weather = args.weather || API_CONSTANTS.DEFAULT_VALUES.WEATHER;
-    const candidates = buildCandidates(closetCandidates(data.items), weather, args.preferredItemsId);
+    const candidates = buildCandidates(closetCandidates(data.items), args.preferredItemsId);
     const previous = new Set(data.previousOutfits.map(outfitSignature));
     const fallback = ruleBasedOutfit(candidates, previous);
-    if (!fallback) throw new ConvexError("No new complete outfit is available for this weather. Add a suitable top and bottom, or a full-body item, and try again.");
+    if (!fallback) throw new ConvexError("No new complete outfit is available. Add a suitable top and bottom, or a full-body item, and try again.");
 
     const eligibleIds = new Set(Object.values(candidates).flat().map(item => item.id));
     const prompt = generateOutfitPrompt(candidates, {
-      occasion, weather,
+      occasion,
       preferredItemsId: args.preferredItemsId.filter(id => eligibleIds.has(id)),
       previousOutfits: data.previousOutfits,
       ...(args.instructions && { instructions: args.instructions.slice(0, 6000) }),
@@ -41,7 +44,7 @@ export const analyzeOutfit = action({
     try {
       const openai = new OpenAI({
         ...(process.env.CONVEX_OPENAI_BASE_URL && { baseURL: process.env.CONVEX_OPENAI_BASE_URL }),
-        apiKey: process.env.CONVEX_OPENAI_API_KEY ?? "",
+        apiKey: process.env.CONVEX_OPENAI_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim() || "",
         timeout: API_CONSTANTS.OPENAI.TIMEOUT,
         maxRetries: 0, // Exactly one repair attempt for invalid output; no hidden SDK retries.
       });
@@ -66,6 +69,6 @@ export const analyzeOutfit = action({
     // Both paths go through the same final strict validator.
     const checked = validateOutfit(selection, candidates, previous);
     if (!checked.outfit) throw new ConvexError(checked.errors.join(" "));
-    return { outfit: checked.outfit as GeneratedOutfit["outfit"], source, occasion, weather };
+    return { outfit: checked.outfit as GeneratedOutfit["outfit"], source, occasion };
   },
 });

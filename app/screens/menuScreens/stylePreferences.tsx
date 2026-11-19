@@ -38,7 +38,6 @@ export default function StylePreferences() {
   const [preferences, setPreferences] = useState({
     avoidClothing: "",
     occasions: [] as string[],
-    seasonalOutfits: false,
     height: "",
     weight: "",
   });
@@ -49,7 +48,6 @@ export default function StylePreferences() {
       setPreferences({
         avoidClothing: userPreferences.avoidClothing || "",
         occasions: userPreferences.preferredOccasions || [],
-        seasonalOutfits: userPreferences.seasonalOutfits || false,
         height: userPreferences.height || "",
         weight: userPreferences.weight || "",
       });
@@ -77,7 +75,6 @@ export default function StylePreferences() {
         avoidClothing: preferences.avoidClothing,
         preferredOccasions: preferences.occasions,
         preferredBrands: "", // Keep existing or empty
-        seasonalOutfits: preferences.seasonalOutfits,
       });
 
       Alert.alert("Success", "Your outfit preferences have been updated!", [
@@ -161,7 +158,7 @@ export default function StylePreferences() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Clothing to Avoid</Text>
           <Text style={styles.sectionSubtitle}>
-            Items you don't like to wear
+            Items you don&apos;t like to wear
           </Text>
           <TextInput
             style={styles.textInput}
@@ -208,52 +205,6 @@ export default function StylePreferences() {
           </View>
         </View>
 
-        {/* Divider */}
-        <View style={styles.divider} />
-
-        {/* Seasonal Outfits */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Seasonal Recommendations</Text>
-          <Text style={styles.sectionSubtitle}>Adapt outfits to weather</Text>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.toggleOption,
-                preferences.seasonalOutfits && styles.selectedOption,
-              ]}
-              onPress={() =>
-                setPreferences((prev) => ({ ...prev, seasonalOutfits: true }))
-              }
-            >
-              <Text
-                style={[
-                  styles.optionText,
-                  preferences.seasonalOutfits && styles.selectedText,
-                ]}
-              >
-                Yes, adapt to weather
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleOption,
-                !preferences.seasonalOutfits && styles.selectedOption,
-              ]}
-              onPress={() =>
-                setPreferences((prev) => ({ ...prev, seasonalOutfits: false }))
-              }
-            >
-              <Text
-                style={[
-                  styles.optionText,
-                  !preferences.seasonalOutfits && styles.selectedText,
-                ]}
-              >
-                No, keep it simple
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </ScrollView>
 
       {/* Save Button */}
@@ -357,15 +308,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     alignItems: "center",
   },
-  toggleContainer: {},
-  toggleOption: {
-    padding: SPACING.sm,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.sm,
-    alignItems: "center",
-  },
+
   textInput: {
     borderWidth: 1,
     borderColor: COLORS.border,

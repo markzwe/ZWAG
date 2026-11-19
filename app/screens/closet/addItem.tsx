@@ -3,11 +3,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   StatusBar,
   Animated,
 } from "react-native";
-import React, { useRef, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, SHADOWS, SPACING, BORDER_RADIUS } from "@/constants/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,13 +14,12 @@ import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 
-const { width, height } = Dimensions.get("window");
 
 export default function AddItem() {
   const insets = useSafeAreaInsets();
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const [fadeAnim] = React.useState(() => new Animated.Value(0));
+  const [scaleAnim] = React.useState(() => new Animated.Value(0.9));
 
   useEffect(() => {
     Animated.parallel([
@@ -37,7 +35,7 @@ export default function AddItem() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, scaleAnim]);
 
   const handleOpenCamera = async () => {
     // Request camera permissions
@@ -80,7 +78,6 @@ export default function AddItem() {
       <View style={[styles.screenContainer, { paddingTop: insets.top }]}>
         <StatusBar
           barStyle="dark-content"
-          backgroundColor={COLORS.primaryBackground}
         />
 
         {/* Header */}
@@ -150,7 +147,6 @@ export default function AddItem() {
     <View style={[styles.screenContainer, { paddingTop: insets.top }]}>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor={COLORS.primaryBackground}
       />
 
       {/* Header with Image Actions */}

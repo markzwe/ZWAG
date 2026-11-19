@@ -19,7 +19,7 @@ export default defineSchema({
       avoidClothing: v.optional(v.string()),             // clothing types to avoid
       preferredOccasions: v.optional(v.array(v.string())), // e.g. ["work", "casual"]
       preferredBrands: v.optional(v.string()),           // comma-separated brands
-      seasonalOutfits: v.optional(v.boolean()),          // weather-based recommendations
+      seasonalOutfits: v.optional(v.boolean()), // Legacy field; no longer read or written.
 
       numberOfClothes: v.optional(v.number()), // Number of clothes user has
     })
@@ -64,7 +64,7 @@ export default defineSchema({
     signature: v.string(),
     eventId: v.string(),
     occasion: v.string(),
-    weather: v.string(),
+    weather: v.optional(v.string()), // Legacy history only; new outfits omit it.
     source: sourceValidator,
     shownAt: v.number(),
   }).index("by_user", ["userId"])

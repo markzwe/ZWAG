@@ -74,14 +74,7 @@ A streamlined 5-screen onboarding flow designed to get users to their first AI-g
 - Smart casual 👕
 - Casual/no dress code 👯
 
-**Question 2**: "What weather do you deal with most?"
-
-- Hot/sunny ☀️
-- Cold/rainy 🌧️
-- Seasonal changes 🍂
-- Mild year-round 🌤️
-
-**Data Stored**: `formalityLevel`, `weatherType`
+**Data Stored**: `formalityLevel`
 
 ### Screen 5: Frequency Settings (`frequencySettings.tsx`)
 
@@ -124,11 +117,6 @@ interface OnboardingData {
     | "business-casual"
     | "smart-casual"
     | "casual-no-dress-code";
-  weatherType?:
-    | "hot-sunny"
-    | "cold-rainy"
-    | "seasonal-changes"
-    | "mild-year-round";
   suggestionFrequency?:
     | "daily"
     | "weekdays-only"
@@ -142,7 +130,6 @@ interface OnboardingData {
 `getSmartDefaults()` function converts onboarding preferences into AI prompt parameters:
 
 - Formality level influences dress code recommendations
-- Weather type affects fabric and layering suggestions
 - Style direction guides overall aesthetic
 - Setup method determines initial wardrobe approach
 
@@ -184,7 +171,6 @@ All screens include:
 - Assumes business casual if unsure
 - Defaults to practical over trendy
 - Conservative occasion defaults
-- Weather integration enabled
 
 ### ✅ Questions Avoided
 
@@ -201,7 +187,6 @@ All screens include:
 Onboarding data should be passed to GPT prompt engineering:
 
 - Use `formalityLevel` for dress code context
-- Apply `weatherType` for seasonal appropriateness
 - Reference `clothingChallenge` for targeted solutions
 - Respect `defaultStyle` for aesthetic direction
 
@@ -229,5 +214,4 @@ Onboarding data should be passed to GPT prompt engineering:
 
 - A/B testing different value propositions
 - Personalized quick start based on style assessment
-- Weather API integration for real-time suggestions
 - Machine learning on onboarding choices vs. actual usage patterns

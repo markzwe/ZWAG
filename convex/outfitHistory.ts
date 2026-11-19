@@ -25,7 +25,7 @@ export const generationContext = internalQuery({
 });
 
 export const recordShown = mutation({
-  args: { outfit: outfitValidator, source: sourceValidator, occasion: v.string(), weather: v.string(), eventId: v.string() },
+  args: { outfit: outfitValidator, source: sourceValidator, occasion: v.string(), eventId: v.string() },
   handler: async (ctx, args): Promise<Id<"outfitHistory">> => {
     const user = await getAuthenticatedUser(ctx);
     const existing = await ctx.db.query("outfitHistory").withIndex("by_user_event", q => q.eq("userId", user._id).eq("eventId", args.eventId)).first();
@@ -35,7 +35,7 @@ export const recordShown = mutation({
     }
     // Validate again at write time: items may have been changed/deleted since generation.
     const items = await ctx.db.query("items").withIndex("by_userId", q => q.eq("userId", user._id)).collect();
-    const checked = validateOutfit(args.outfit, buildCandidates(closetCandidates(items), args.weather));
+    const checked = validateOutfit(args.outfit, buildCandidates(closetCandidates(items)));
     if (!checked.outfit) throw new ConvexError(checked.errors.join(" "));
     const signature = outfitSignature(checked.outfit);
     const repeated = await ctx.db.query("outfitHistory").withIndex("by_user_signature", q => q.eq("userId", user._id).eq("signature", signature)).first();

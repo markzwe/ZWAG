@@ -16,7 +16,6 @@ export const createUser = mutation({
       avoidClothing: v.optional(v.string()),             // clothing types to avoid
       preferredOccasions: v.optional(v.array(v.string())), // e.g. ["work", "casual"]
       preferredBrands: v.optional(v.string()),           // comma-separated brands
-      seasonalOutfits: v.optional(v.boolean()),          // weather-based recommendations
       numberOfClothes: v.optional(v.number()), // Number of clothes user has
     },
     handler: async (ctx, args) => {
@@ -45,7 +44,6 @@ export const updateStylePreferences = mutation({
       avoidClothing: v.optional(v.string()),
       preferredOccasions: v.optional(v.array(v.string())),
       preferredBrands: v.optional(v.string()),
-      seasonalOutfits: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         const user = await getAuthenticatedUser(ctx);
@@ -59,7 +57,6 @@ export const updateStylePreferences = mutation({
           ...(args.avoidClothing !== undefined && { avoidClothing: args.avoidClothing }),
           ...(args.preferredOccasions !== undefined && { preferredOccasions: args.preferredOccasions }),
           ...(args.preferredBrands !== undefined && { preferredBrands: args.preferredBrands }),
-          ...(args.seasonalOutfits !== undefined && { seasonalOutfits: args.seasonalOutfits }),
         });
     },
 });

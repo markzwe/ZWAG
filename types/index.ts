@@ -48,17 +48,10 @@ export interface Outfit {
   items: OutfitItem;
   name?: string;
   occasion?: string;
-  weather?: string;
   _creationTime: number;
 }
 
 // ==================== AI GENERATION TYPES ====================
-export interface OutfitGenerationContext {
-  occasion: string;
-  weather: string;
-  preferredItemsId: string[];
-}
-
 export interface ItemForAI {
   id: Id<"items">;
   category: string;

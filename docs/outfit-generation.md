@@ -3,9 +3,7 @@
 `generateOutfits:analyzeOutfit` reads the authenticated user's closet through an
 internal query. Client-supplied wardrobe records are not accepted. The shared
 rules in `lib/outfitRules.ts` normalize category names and build slot candidates.
-Cold weather excludes shorts, tanks, sandals, rompers and swimwear; hot/warm
-weather excludes parkas, puffers, down/winter/heavy coats and thermals. These are
-explicit garment-type rules, not temperature/fabric predictions from captions.
+All recognized garment types remain eligible; candidates are grouped by category.
 
 Only eligible candidates, preferred eligible IDs, context and previously shown
 item sets go to the model. A strict validator rejects nonexistent/ineligible IDs,
@@ -20,7 +18,7 @@ The screen records an accepted suggestion immediately before displaying it.
 `outfitHistory` stores the user, slots, item IDs, canonical item-set signature,
 context, source (`ai` or `rules`) and display timestamp. All recorded sets are
 excluded from future results, regardless of accessory order. The mutation
-revalidates ownership/weather and rejects repeats atomically, including requests
+revalidates ownership/categories and rejects repeats atomically, including requests
 from other devices. A generation abandoned before acceptance isn't recorded.
 
 `outfitFeedback` stores the user, history ID, immutable item-ID snapshot, action
@@ -35,14 +33,16 @@ with `npx convex dev`; this feature does not require a native rebuild.
 
 ## Conversational stylist
 
-The custom-generation button opens `/screens/generateOutfit/chat`; the old
-occasion questionnaire screen has been removed. `stylistChat:sendMessage` accepts
-a bounded conversation and remembers occasion/weather context between turns.
-It answers general style questions without inventing owned garments. Outfit
-requests ask about weather if needed, then call the existing validated generator
-with the recent conversation as preferences. The chat records accepted outfit
-cards in history and uses the same save/dislike/Try Another feedback mutations.
+The generation tab opens chat directly. `stylistChat:sendMessage` accepts a bounded
+conversation and remembers occasion/style context between turns. It answers general
+style questions without inventing owned garments. Outfit requests call the validated
+generator immediately with the recent conversation as preferences. The chat records
+accepted outfit cards in history and uses the same save/dislike/Try Another feedback
+mutations. No weather information or seasonal preference is required or collected.
 
-Messages stay in local screen state and clear on a new chat or leaving the screen;
+Messages stay in local screen state and clear on a new chat or component unmount;
 outfit history and feedback remain persisted per user. Provider failures leave a
 retry control for the same turn, rather than pretending an AI reply succeeded.
+
+Legacy weather/history and seasonal user fields remain optional in the database
+schema so older records remain valid. New requests and writes omit those fields.

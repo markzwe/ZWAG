@@ -73,8 +73,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="generateOutfits"
+        name="chat"
         options={{
+          tabBarStyle: {display: "none"},
           tabBarLabel: () => null,
           tabBarIcon: ({ color, focused }) => {
             return (

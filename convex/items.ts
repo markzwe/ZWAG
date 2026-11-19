@@ -151,24 +151,6 @@ export const getOutfitItemsFromAi = query({
   },
 });
 
-//used in askPrefrencedItem.tsx
-export const getItemsByIds = query({
-  args: { itemIds: v.array(v.id("items")) },
-  handler: async (ctx, { itemIds }) => {
-  const currentUser = await getAuthenticatedUser(ctx);
-
-  const items = await ctx.db.query("items")
-  .withIndex("by_userId", (q) => q.eq("userId", currentUser._id))
-  .filter((q) =>
-    q.or(...itemIds.map((id) => q.eq(q.field("_id"), id)))
-  )
-  .collect();
-
-    return items;
-  },
-});
-
-
 export const countItemsByCategory = query({
   handler: async (ctx) => {
     // Get the authenticated user

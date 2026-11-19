@@ -11,11 +11,15 @@ export default function StylistOutfitCard({ outfit, disabled, saving, saved, onS
   outfit: OutfitItem; disabled: boolean; saving: boolean; saved: boolean;
   onSave: () => void; onDislike: () => void; onAnother: () => void;
 }) {
+  // Resolve images from the authenticated closet query, never from model-provided
+  // URLs. Omit unused slots so full-body outfits work without a top and bottom.
   const items = useQuery(api.items.getOutfitItemsFromAi, {
     ...(outfit.top && { top: outfit.top }), ...(outfit.bottom && { bottom: outfit.bottom }),
     ...(outfit.fullBody && { fullBody: outfit.fullBody }), ...(outfit.shoes && { shoes: outfit.shoes }),
     ...(outfit.outerwear && { outerwear: outfit.outerwear }), ...(outfit.accessories && { accessories: outfit.accessories }),
   });
+  // Items deleted since generation may resolve to null; render the remaining
+  // garments and let the save mutation revalidate the complete outfit.
   const garments = items ? [items.top, items.bottom, items.fullBody, items.shoes, items.outerwear, ...items.accessories].filter(item => item !== null) : [];
   return (
     <View style={styles.card}>
