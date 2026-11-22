@@ -25,7 +25,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "@clerk/clerk-expo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Messages } from "openai/resources/chat/completions.mjs";
 
 // One entry displayed in the transcript. `?` marks optional fields: an ordinary
 // text reply has no suggestion, and only saved outfit cards need saved=true.
@@ -61,6 +64,12 @@ const friendlyError = (error: unknown) =>
     : "Couldn't send that message. Please try again.";
 
 export default function StylistChat() {
+  const { isLoaded, userId } = useAuth();
+  if (!isLoaded || !userId) return null;
+  return <ChatSession key={userId} userId={userId} />;
+}
+export function ChatSession({ userId }: { userId: string }) {
+  const storageKey = `zwag:chat:v1:${userId}`;
   // These hooks return callable backend references; declaring them sends no chat
   // request. Actions can call OpenAI; mutations write history, feedback, or saves.
   const chat = useAction(api.stylistChat.sendMessage);
@@ -71,9 +80,60 @@ export default function StylistChat() {
   // schedules a render so the UI reflects the new value. The transcript is local,
   // not loaded from a chat database when this screen mounts.
   const [messages, setMessages] = useState<Message[]>([]);
-  // Context carries occasion/style across follow-ups, even if old messages are
-  // removed from the bounded request sent to the backend.
+
+  // Context carries occasion/style across follow-ups, even if old messages are removed from the bounded request sent to the backend.
   const [context, setContext] = useState<StylistContext>(initialContext);
+
+  const [storageStatus, setStorageStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+
+  // Restore the previous conversation when chat opens.
+  useEffect(() => {
+    let active = true;
+
+    const restoreChat = async () => {
+      try {
+        const raw = await AsyncStorage.getItem(storageKey);
+        if (!active) return;
+
+        if (raw !== null) {
+          const saved = JSON.parse(raw) as {
+            messages: Message[];
+            context: StylistContext;
+          };
+
+          if (
+            !Array.isArray(saved?.messages) ||
+            typeof saved.context?.occasion !== "string"
+          ) {
+            throw new Error("Invalid saved conversation");
+          }
+
+          setMessages(saved.messages);
+          setContext(saved.context);
+        }
+        setStorageStatus("ready");
+      } catch {
+        if (!active) setStorageStatus("error");
+      }
+    };
+
+    void restoreChat();
+    return () => {
+      active = false;
+    };
+  }, [storageKey]);
+  useEffect(() => {
+    if (storageStatus != "ready") return;
+
+    void AsyncStorage.setItem(
+      storageKey,
+      JSON.stringify({ messages, context }),
+    ).catch((error) => {
+      console.warn("Could not save chat", error);
+    });
+  }, [storageKey, storageStatus, messages, context]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   // Store the message ID being saved so only that outfit card shows a save spinner.
@@ -227,7 +287,6 @@ export default function StylistChat() {
     }
   }
 
-
   // Derive UI availability from state instead of keeping a separate flag in sync.
   const disabled = sending || saving !== null;
 
@@ -235,13 +294,13 @@ export default function StylistChat() {
     <SafeAreaView style={styles.screen}>
       {/* Header: return to the closet or confirm clearing this conversation. */}
       <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.circularBackButton}
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={24} color={COLORS.pureWhite} />
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.circularBackButton}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color={COLORS.pureWhite} />
+        </TouchableOpacity>
       </View>
       {/* Adjust the content area when the software keyboard opens. */}
       <KeyboardAvoidingView
@@ -280,6 +339,24 @@ export default function StylistChat() {
                 Tell me the occasion and your vibe. We’ll find a look in your
                 closet.
               </Text>
+              <View>
+                {[
+                  "Build me a casual outfit",
+                  "What should I wear to dinner?",
+                  "What colors go well with navy?",
+                ].map((prompt) => (
+                  <TouchableOpacity
+                    key={prompt}
+                    accessibilityRole="button"
+                    style={styles.chatStarterButton}
+                    disabled={disabled}
+
+                    onPress={() => send(prompt)}
+                  >
+                    <Text style={styles.chatStarterText}>{prompt}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           }
           // Each row chooses the user bubble or assistant text/card from its role.
@@ -521,6 +598,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 9,
   },
+  chatStarters: {},
+  chatStarterButton: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  chatStarterText: {
+    color: COLORS.textPrimary,
+    fontSize: 14,
+  },
   // Request-failure message and Retry control.
   errorBanner: {
     marginHorizontal: 16,
@@ -532,7 +622,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-    circularBackButton: {
+  circularBackButton: {
     width: 44,
     height: 44,
     borderRadius: 22,

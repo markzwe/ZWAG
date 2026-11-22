@@ -3,7 +3,7 @@ import { buildCandidates, outfitIds, outfitSignature, validateOutfit, type Close
 import { internalQuery, mutation } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { getAuthenticatedUser } from "./users";
-import { outfitValidator, sourceValidator } from "./outfitValidators";
+import { outfitDataValidator, sourceValidator } from "./outfitDataValidators";
 
 export function closetCandidates(items: Doc<"items">[]): ClosetCandidate[] {
   return items.map(item => ({ id: item._id, category: item.category, subcategory: item.subcategory, caption: item.caption, color: item.color ?? "", style: item.style }));
@@ -25,7 +25,7 @@ export const generationContext = internalQuery({
 });
 
 export const recordShown = mutation({
-  args: { outfit: outfitValidator, source: sourceValidator, occasion: v.string(), eventId: v.string() },
+  args: { outfit: outfitDataValidator, source: sourceValidator, occasion: v.string(), eventId: v.string() },
   handler: async (ctx, args): Promise<Id<"outfitHistory">> => {
     const user = await getAuthenticatedUser(ctx);
     const existing = await ctx.db.query("outfitHistory").withIndex("by_user_event", q => q.eq("userId", user._id).eq("eventId", args.eventId)).first();

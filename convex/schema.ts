@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { outfitFields, outfitValidator, sourceValidator } from "./outfitValidators";
+import { outfitFields, outfitDataValidator, sourceValidator } from "./outfitDataValidators";
 
 export default defineSchema({
 
@@ -59,7 +59,7 @@ export default defineSchema({
 
   outfitHistory: defineTable({
     userId: v.id("users"),
-    outfit: outfitValidator,
+    outfit: outfitDataValidator,
     itemIds: v.array(v.id("items")),
     signature: v.string(),
     eventId: v.string(),

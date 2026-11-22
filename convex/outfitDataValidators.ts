@@ -7,5 +7,5 @@ export const outfitFields = {
   outerwear: v.optional(v.id("items")),
   accessories: v.optional(v.array(v.id("items"))),
 };
-export const outfitValidator = v.object(outfitFields);
+export const outfitDataValidator = v.object(outfitFields);
 export const sourceValidator = v.union(v.literal("ai"), v.literal("rules"));

@@ -7,7 +7,7 @@ import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { closetCandidates, type GenerationContext } from "./outfitHistory";
-import { outfitValidator, sourceValidator } from "./outfitValidators";
+import { outfitDataValidator, sourceValidator } from "./outfitDataValidators";
 
 export interface GeneratedOutfit {
   outfit: Doc<"outfitHistory">["outfit"];
@@ -17,7 +17,7 @@ export interface GeneratedOutfit {
 
 export const analyzeOutfit = action({
   args: { preferredItemsId: v.array(v.string()), occasion: v.optional(v.string()), instructions: v.optional(v.string()) },
-  returns: v.object({ outfit: outfitValidator, source: sourceValidator, occasion: v.string() }),
+  returns: v.object({ outfit: outfitDataValidator, source: sourceValidator, occasion: v.string() }),
   handler: async (ctx, args): Promise<GeneratedOutfit> => {
     // The server-side generator always starts from the canonical per-user closet state,
     // never from any client-provided item list. We group closet items into category slots,
