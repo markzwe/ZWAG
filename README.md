@@ -1,11 +1,11 @@
 # ZWAG - AI-Powered Personal Stylist App
 
-**ZWAG** is a production-ready React Native app that uses AI to help users create personalized outfit recommendations from their wardrobe. Built with modern TypeScript, strict coding practices, and scalable architecture.
+**ZWAG** is a React Native app for keeping a digital closet and getting outfit suggestions from clothes you own. Chat is optional and requires explicit permission to share text with OpenAI.
 
 ## 🚀 Features
 
-- **AI-Powered Outfit Generation**: Uses OpenAI GPT-4 to create personalized outfit recommendations
-- **Smart Image Processing**: Apple VisionKit integration for automatic background removal (iOS 16+)
+- **AI-Powered Outfit Generation**: Uses OpenAI for fashion advice and closet-based outfit suggestions, with deterministic outfit validation and a rule-based fallback
+- **Smart Image Processing**: On-device Vision background removal on supported iPhones (iOS 17+)
 - **Real-time Database**: Convex backend with real-time synchronization
 - **Advanced Caching**: Intelligent caching system with automatic cleanup and invalidation
 - **Type-Safe Architecture**: Strict TypeScript with comprehensive type definitions
@@ -17,7 +17,7 @@
 ### Tech Stack
 - **Frontend**: React Native + Expo Router (file-based routing)
 - **Backend**: Convex (serverless functions + real-time database)
-- **AI**: OpenAI GPT-4 for outfit generation
+- **AI**: OpenAI for chat and outfit selection
 - **Graphics**: React Native Skia for outfit visualization
 - **Auth**: Clerk authentication with Google/Apple SSO
 - **Image Processing**: Apple VisionKit for background removal
@@ -43,8 +43,8 @@
 ## 🛠️ Development Setup
 
 ### Prerequisites
-- Node.js 18+
-- iOS 16+ (for VisionKit features)
+- Node.js 22.13+ in the Node 22 line, or a version supported by package.json
+- iOS 17+ for background removal
 - Expo CLI
 - Convex CLI
 
@@ -64,10 +64,12 @@
    
    Configure the following variables:
    ```
-   CONVEX_DEPLOYMENT=your-convex-deployment-url
-   CONVEX_OPENAI_API_KEY=your-openai-api-key
-   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-key
+   CONVEX_DEPLOYMENT=dev:your-deployment
+   EXPO_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
    ```
+
+   Set Clerk and OpenAI server-side secrets on the Convex deployment. See the [release and deployment notes](docs/release-readiness.md).
 
 3. **Start Convex backend**
    ```bash

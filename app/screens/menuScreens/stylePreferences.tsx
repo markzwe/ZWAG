@@ -3,7 +3,7 @@ import { api } from "@/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -27,7 +27,6 @@ const OCCASION_OPTIONS = [
 
 export default function StylePreferences() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Get current user preferences
@@ -38,8 +37,6 @@ export default function StylePreferences() {
   const [preferences, setPreferences] = useState({
     avoidClothing: "",
     occasions: [] as string[],
-    height: "",
-    weight: "",
   });
 
   // Load user preferences when data is available
@@ -48,8 +45,6 @@ export default function StylePreferences() {
       setPreferences({
         avoidClothing: userPreferences.avoidClothing || "",
         occasions: userPreferences.preferredOccasions || [],
-        height: userPreferences.height || "",
-        weight: userPreferences.weight || "",
       });
     }
   }, [userPreferences]);
@@ -69,8 +64,6 @@ export default function StylePreferences() {
       await updateStylePreferences({
         stylePreferences: [],
         favoriteColors: [],
-        height: preferences.height,
-        weight: preferences.weight,
         fitPreference: "",
         avoidClothing: preferences.avoidClothing,
         preferredOccasions: preferences.occasions,
@@ -174,36 +167,6 @@ export default function StylePreferences() {
 
         {/* Divider */}
         <View style={styles.divider} />
-
-        {/* Measurements */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Measurements</Text>
-          <Text style={styles.sectionSubtitle}>Your height and weight</Text>
-          <View style={styles.measurementsRow}>
-            <View style={styles.measurementItem}>
-              <Text style={styles.measurementLabel}>Height</Text>
-              <TextInput
-                style={styles.measurementInput}
-                value={preferences.height}
-                onChangeText={(text) =>
-                  setPreferences((prev) => ({ ...prev, height: text }))
-                }
-                placeholder="5'8&quot;"
-              />
-            </View>
-            <View style={styles.measurementItem}>
-              <Text style={styles.measurementLabel}>Weight</Text>
-              <TextInput
-                style={styles.measurementInput}
-                value={preferences.weight}
-                onChangeText={(text) =>
-                  setPreferences((prev) => ({ ...prev, weight: text }))
-                }
-                placeholder="150 lbs"
-              />
-            </View>
-          </View>
-        </View>
 
       </ScrollView>
 

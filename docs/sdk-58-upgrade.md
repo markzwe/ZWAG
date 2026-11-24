@@ -67,9 +67,8 @@ review the native diff, and commit the native changes along with app.json. Prese
 custom native changes before regenerating projects. Disabling the advisory does
 not make EAS synchronize native configuration automatically.
 
-Full-project TypeScript checks also report existing unused-code errors and
-`expiresAt: undefined` in `convex/inviteCodes.ts`; these are separate from the SDK
-migration. The upgrade corrects the chat list footer type and optional Clerk
+Full-project TypeScript checks also report existing unused-code errors, separate
+from the SDK migration. The upgrade corrects the chat list footer type and optional Clerk
 provider props required by the updated dependencies.
 
 References:

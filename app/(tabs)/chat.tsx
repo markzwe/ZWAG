@@ -1,7 +1,9 @@
 // This file runs on the phone. It owns the conversation UI and calls Convex;
 // the backend in convex/stylistChat.ts handles the model and outfit selection.
 import StylistOutfitCard from "@/components/StylistOutfitCard";
-import { Button } from "@/components/ui";
+import { AI_CONSENT_DISCLOSURE, AI_CONSENT_VERSION } from "@/constants/aiConsent";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
+import { readLocalChat, saveLocalChat } from "@/lib/localChatStorage";
 import { COLORS, SHADOWS } from "@/constants/theme";
 import { api } from "@/convex/_generated/api";
 // `import type` is for TypeScript checking; it does not run backend code here.
@@ -12,13 +14,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAction, useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -26,9 +29,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Messages } from "openai/resources/chat/completions.mjs";
 
 // One entry displayed in the transcript. `?` marks optional fields: an ordinary
 // text reply has no suggestion, and only saved outfit cards need saved=true.
@@ -63,13 +64,71 @@ const friendlyError = (error: unknown) =>
     ? error.data
     : "Couldn't send that message. Please try again.";
 
-export default function StylistChat() {
-  const { isLoaded, userId } = useAuth();
-  if (!isLoaded || !userId) return null;
+export default function ChatScreen() {
+  const { userId } = useAuth();
+  const { status } = useAccountStatus();
+  const setConsent = useMutation(api.users.setAiConsent);
+  const [savingConsent, setSavingConsent] = useState(false);
+
+  async function allowConsent() {
+    if (savingConsent) return;
+    setSavingConsent(true);
+    try {
+      await setConsent({ allowed: true, version: AI_CONSENT_VERSION });
+    } catch (error) {
+      Alert.alert(
+        "Could not update permission",
+        error instanceof ConvexError && typeof error.data === "string"
+          ? error.data
+          : "Check your connection and try again.",
+      );
+    } finally {
+      setSavingConsent(false);
+    }
+  }
+
+  if (!userId || !status?.canUseApp) return null;
+  if (!status.aiConsent) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <ScrollView contentContainerStyle={styles.consent}>
+          <View style={styles.consentCard}>
+            <View style={styles.heroIcon} accessible={false}>
+              <Ionicons name="shield-checkmark-outline" size={32} color={COLORS.pureWhite} />
+            </View>
+            <Text accessibilityRole="header" style={styles.title}>Chat with Zwag</Text>
+            <Text style={styles.description}>{AI_CONSENT_DISCLOSURE}</Text>
+            <View style={styles.consentActions}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityState={{ disabled: savingConsent, busy: savingConsent }}
+                disabled={savingConsent}
+                style={[styles.consentButton, styles.consentPrimary, savingConsent && styles.consentBusy]}
+                onPress={() => void allowConsent()}
+              >
+                <Text style={styles.consentPrimaryText}>
+                  {savingConsent ? "Saving permission…" : "Allow and continue"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityState={{ disabled: savingConsent }}
+                disabled={savingConsent}
+                style={[styles.consentButton, styles.consentSecondary]}
+                onPress={() => router.replace("/(tabs)")}
+              >
+                <Text style={styles.consentSecondaryText}>Not now</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
   return <ChatSession key={userId} userId={userId} />;
 }
+
 export function ChatSession({ userId }: { userId: string }) {
-  const storageKey = `zwag:chat:v1:${userId}`;
   // These hooks return callable backend references; declaring them sends no chat
   // request. Actions can call OpenAI; mutations write history, feedback, or saves.
   const chat = useAction(api.stylistChat.sendMessage);
@@ -94,7 +153,7 @@ export function ChatSession({ userId }: { userId: string }) {
 
     const restoreChat = async () => {
       try {
-        const raw = await AsyncStorage.getItem(storageKey);
+        const raw = await readLocalChat(userId);
         if (!active) return;
 
         if (raw !== null) {
@@ -115,7 +174,7 @@ export function ChatSession({ userId }: { userId: string }) {
         }
         setStorageStatus("ready");
       } catch {
-        if (!active) setStorageStatus("error");
+        if (active) setStorageStatus("error");
       }
     };
 
@@ -123,17 +182,17 @@ export function ChatSession({ userId }: { userId: string }) {
     return () => {
       active = false;
     };
-  }, [storageKey]);
+  }, [userId]);
   useEffect(() => {
-    if (storageStatus != "ready") return;
+    if (storageStatus !== "ready") return;
 
-    void AsyncStorage.setItem(
-      storageKey,
+    void saveLocalChat(
+      userId,
       JSON.stringify({ messages, context }),
     ).catch((error) => {
       console.warn("Could not save chat", error);
     });
-  }, [storageKey, storageStatus, messages, context]);
+  }, [userId, storageStatus, messages, context]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   // Store the message ID being saved so only that outfit card shows a save spinner.
@@ -328,12 +387,10 @@ export function ChatSession({ userId }: { userId: string }) {
                 <Ionicons
                   name="sparkles-outline"
                   size={32}
-                  color={COLORS.accent}
+                  color={COLORS.pureWhite}
                 />
               </View>
-              <Text style={styles.eyebrow}>
-                GOOD STYLE STARTS WITH A CONVERSATION
-              </Text>
+              <Text style={styles.eyebrow}>Zwag</Text>
               <Text style={styles.title}>What are we{"\n"}dressing for?</Text>
               <Text style={styles.description}>
                 Tell me the occasion and your vibe. We’ll find a look in your
@@ -370,8 +427,8 @@ export function ChatSession({ userId }: { userId: string }) {
             ) : (
               <View style={styles.assistantMessage}>
                 <View style={styles.assistantLabel}>
-                  <Ionicons name="sparkles" size={13} color={COLORS.accent} />
-                  <Text style={styles.assistantName}>ZWAG</Text>
+                  <Ionicons name="sparkles" size={13} color={COLORS.black} />
+                  <Text style={styles.assistantName}>Zwag</Text>
                 </View>
                 <Text selectable style={styles.assistantText}>
                   {item.content}
@@ -398,9 +455,9 @@ export function ChatSession({ userId }: { userId: string }) {
           ListFooterComponent={
             sending ? (
               <View style={styles.thinking}>
-                <ActivityIndicator size="small" color={COLORS.accent} />
+                <ActivityIndicator size="small" color={COLORS.black} />
                 <Text style={styles.thinkingText}>
-                  Your stylist is thinking…
+                  Zwag is thinking…
                 </Text>
               </View>
             ) : undefined
@@ -429,7 +486,7 @@ export function ChatSession({ userId }: { userId: string }) {
         <View style={styles.composerArea}>
           <View style={styles.composer}>
             <TextInput
-              accessibilityLabel="Message your stylist"
+              accessibilityLabel="Message Zwag"
               placeholder="Ask about an outfit…"
               placeholderTextColor={COLORS.textDisabled}
               value={input}
@@ -449,7 +506,7 @@ export function ChatSession({ userId }: { userId: string }) {
                 (disabled || !input.trim()) && styles.sendDisabled,
               ]}
             >
-              <Ionicons name="arrow-up" size={22} color="white" />
+              <Ionicons name="arrow-up" size={22} color={COLORS.pureWhite} />
             </TouchableOpacity>
           </View>
           <Text style={styles.composerNote}>
@@ -464,6 +521,25 @@ export function ChatSession({ userId }: { userId: string }) {
 // Visual presentation only. `flex: 1` fills available space; row/column alignment,
 // padding, and colors determine layout and appearance, not backend behavior.
 const styles = StyleSheet.create({
+  consent: { flexGrow: 1, justifyContent: "center", padding: 20 },
+  consentCard: {
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 440,
+    backgroundColor: COLORS.pureWhite,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 24,
+    ...SHADOWS.sm,
+  },
+  consentActions: { gap: 10, marginTop: 24 },
+  consentButton: { minHeight: 48, padding: 12, borderRadius: 24, justifyContent: "center", alignItems: "center" },
+  consentPrimary: { backgroundColor: COLORS.black },
+  consentSecondary: { borderColor: COLORS.border, borderWidth: 1 },
+  consentBusy: { opacity: 0.65 },
+  consentPrimaryText: { color: COLORS.pureWhite, fontSize: 15, fontWeight: "700", textAlign: "center" },
+  consentSecondaryText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: "600", textAlign: "center" },
   screen: { flex: 1, backgroundColor: COLORS.primaryBackground },
   body: { flex: 1 },
   header: {
@@ -487,7 +563,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   status: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 5 },
-  dot: { width: 5, height: 5, backgroundColor: COLORS.accent, borderRadius: 3 },
+  dot: { width: 5, height: 5, backgroundColor: COLORS.black, borderRadius: 3 },
   headerSubtitle: { fontSize: 10, color: COLORS.textSecondary },
   // Conversation spacing and the introduction shown before the first message.
   transcript: { padding: 20, paddingBottom: 28, gap: 22 },
@@ -497,7 +573,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 24,
-    backgroundColor: "#E9EEE7",
+    backgroundColor: COLORS.black,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 24,
@@ -506,7 +582,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.6,
     fontWeight: "700",
-    color: COLORS.accent,
+    color: COLORS.black,
     marginBottom: 14,
   },
   title: {
@@ -531,9 +607,9 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 5,
     paddingHorizontal: 17,
     paddingVertical: 13,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.black,
   },
-  userText: { color: "white", fontSize: 15, lineHeight: 22 },
+  userText: { color: COLORS.pureWhite, fontSize: 15, lineHeight: 22 },
   assistantMessage: { alignSelf: "stretch" },
   assistantLabel: {
     flexDirection: "row",
@@ -545,7 +621,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.3,
-    color: COLORS.accent,
+    color: COLORS.black,
   },
   assistantText: { fontSize: 15, lineHeight: 24, color: COLORS.textPrimary },
   thinking: {
@@ -561,14 +637,14 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 8,
     borderTopWidth: 1,
-    borderTopColor: "#E9EAE6",
+    borderTopColor: COLORS.divider,
   },
   composer: {
     flexDirection: "row",
     alignItems: "flex-end",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#DADDD7",
+    borderColor: COLORS.border,
     backgroundColor: COLORS.pureWhite,
     padding: 7,
     paddingLeft: 16,
@@ -587,7 +663,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.black,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -617,7 +693,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#FFF0ED",
+    backgroundColor: COLORS.surface,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -631,7 +707,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     ...SHADOWS.sm,
   },
-  errorText: { flex: 1, color: COLORS.error, fontSize: 12, lineHeight: 18 },
+  errorText: { flex: 1, color: COLORS.textPrimary, fontSize: 12, lineHeight: 18 },
   retry: { padding: 8 },
-  retryText: { color: COLORS.error, fontWeight: "700", fontSize: 12 },
+  retryText: { color: COLORS.textPrimary, fontWeight: "700", fontSize: 12 },
 });

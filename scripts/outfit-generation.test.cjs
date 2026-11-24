@@ -28,7 +28,7 @@ const asCandidates = items => items.map(({ _id, ...rest }) => ({ id: _id, ...res
 const topBottom = { top: 't1', bottom: 'b1' };
 const response = value => ({ choices: [{ message: { content: typeof value === 'string' ? value : JSON.stringify(value) } }] });
 
-function generation({ items = closet, previous = [], reply = () => response(topBottom) } = {}) {
+function generation({ items = closet, previous = [], reply = () => response(topBottom), authorize = async () => {} } = {}) {
   const requests = []; const clients = [];
   class FakeOpenAI {
     constructor(options) { clients.push(options); }
@@ -38,7 +38,7 @@ function generation({ items = closet, previous = [], reply = () => response(topB
     } } };
   }
   const { analyzeOutfit } = load('convex/generateOutfits.ts', FakeOpenAI);
-  const run = args => analyzeOutfit._handler({ runQuery: async () => ({ items, previousOutfits: previous }) }, { preferredItemsId: [], ...args });
+  const run = args => analyzeOutfit._handler({ runQuery: async () => ({ items, previousOutfits: previous }), runMutation: authorize }, { preferredItemsId: [], ...args });
   return { run, requests, clients };
 }
 
@@ -164,7 +164,7 @@ test('generation reads only the authenticated user closet and history', async ()
   const data = await historyApi.generationContext._handler(ctx, {});
   assert.equal(data.items.some(i => i.userId !== 'u1'), false);
   assert.deepEqual(plain(data.previousOutfits), [topBottom]);
-  await assert.rejects(historyApi.generationContext._handler(database([], null).ctx, {}), /Unauthorized/);
+  await assert.rejects(historyApi.generationContext._handler(database([], null).ctx, {}), /Sign in/);
 });
 
 test('shown history is idempotent and transactionally rejects repeats, foreign or deleted items', async () => {
@@ -216,7 +216,7 @@ test('persisted shown history changes the next generation across requests', asyn
   const { ctx, tables } = database();
   class RepeatingModel { chat = { completions: { create: async () => response(topBottom) } }; }
   const action = load('convex/generateOutfits.ts', RepeatingModel).analyzeOutfit;
-  const actionContext = { runQuery: () => historyApi.generationContext._handler(ctx, {}) };
+  const actionContext = { runQuery: () => historyApi.generationContext._handler(ctx, {}), runMutation: async () => {} };
   const first = await action._handler(actionContext, { preferredItemsId: [] });
   await historyApi.recordShown._handler(ctx, { ...first, eventId: 'display-first' });
   const second = await action._handler(actionContext, { preferredItemsId: [] });
@@ -254,4 +254,23 @@ test('legacy weather on history does not block saving after weather removal', as
   const savedId = await outfitsApi.saveOutfit._handler(ctx, { historyId, eventId: 'legacy-save' });
   assert.ok(savedId);
   assert.equal(tables.outfits.length, 1);
+});
+
+test('outfit generation checks consent again before sending an invalid-output retry', async () => {
+  const { ConvexError } = localRequire('convex/values');
+  let authorizations = 0;
+  const { run, requests } = generation({
+    reply: () => response({ top: 'invalid-item' }),
+    authorize: async () => {
+      if (++authorizations > 1) throw new ConvexError('OpenAI sharing was revoked.');
+    },
+  });
+  await assert.rejects(run({}), /sharing was revoked/);
+  assert.equal(requests.length, 1);
+});
+
+test('accounts undergoing deletion cannot load a closet for generation', async () => {
+  const { ctx, tables } = database();
+  tables.users[0].deletingAt = Date.now();
+  await assert.rejects(historyApi.generationContext._handler(ctx, {}), /account is being deleted/);
 });

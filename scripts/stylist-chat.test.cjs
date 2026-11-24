@@ -8,7 +8,7 @@ const root = path.resolve(__dirname, '..');
 const localRequire = createRequire(path.join(root, 'package.json'));
 const { ConvexError } = localRequire('convex/values');
 const source = buildSync({ absWorkingDir: root, entryPoints: ['convex/stylistChat.ts'], bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external' }).outputFiles[0].text;
-function setup({ plan = { reply: 'Here is an idea.', needsOutfit: false, occasion: 'Casual' }, generate, signedIn = true, providerError = false, env = { CONVEX_OPENAI_API_KEY: 'synthetic-test-key' }, finishReason = 'stop' } = {}) {
+function setup({ plan = { reply: 'Here is an idea.', needsOutfit: false, occasion: 'Casual' }, generate, signedIn = true, authorizationError, providerError = false, env = { CONVEX_OPENAI_API_KEY: 'synthetic-test-key' }, finishReason = 'stop' } = {}) {
   const requests = []; const generations = []; const clients = [];
   class FakeOpenAI {
     constructor(options) { clients.push(options); }
@@ -20,7 +20,10 @@ function setup({ plan = { reply: 'Here is an idea.', needsOutfit: false, occasio
   }
   const module = { exports: {} };
   vm.runInNewContext(source, { module, exports: module.exports, require: name => name === 'openai' ? FakeOpenAI : localRequire(name), process: { env } });
-  const ctx = { auth: { getUserIdentity: async () => signedIn ? { subject: 'synthetic-user' } : null }, runAction: async (_reference, args) => {
+  const ctx = { runMutation: async () => {
+    if (!signedIn) throw new ConvexError('Sign in to continue.');
+    if (authorizationError) throw new ConvexError(authorizationError);
+  }, runAction: async (_reference, args) => {
     generations.push(args);
     return generate ? generate(args) : { outfit: { top: 'synthetic-top', bottom: 'synthetic-bottom' }, source: 'ai', occasion: args.occasion };
   } };
@@ -120,6 +123,14 @@ test('signed-out, empty, oversized, and malformed conversations do not call the 
   for (const messages of [[], [{ role: 'assistant', content: 'Hello' }], [{ role: 'user', content: ' ' }], [{ role: 'user', content: 'x'.repeat(2001) }], Array.from({ length: 21 }, () => ({ role: 'user', content: 'Hi' }))]) {
     const { run, requests } = setup();
     await assert.rejects(run({ ...turn, messages }), /shorter message/);
+    assert.equal(requests.length, 0);
+  }
+});
+
+test('chat sends no API request during account deletion, without consent, or above the daily limit', async () => {
+  for (const message of ['This account is being deleted', 'Allow OpenAI sharing', 'Daily AI limit reached']) {
+    const { run, requests } = setup({ authorizationError: message });
+    await assert.rejects(run(turn), error => error instanceof ConvexError && error.data === message);
     assert.equal(requests.length, 0);
   }
 });

@@ -19,6 +19,10 @@ export const analyzeOutfit = action({
   args: { preferredItemsId: v.array(v.string()), occasion: v.optional(v.string()), instructions: v.optional(v.string()) },
   returns: v.object({ outfit: outfitDataValidator, source: sourceValidator, occasion: v.string() }),
   handler: async (ctx, args): Promise<GeneratedOutfit> => {
+    if (args.preferredItemsId.length > 25 || args.preferredItemsId.some(id => id.length > 128)
+      || (args.occasion?.length ?? 0) > 240 || (args.instructions?.length ?? 0) > 6000) {
+      throw new ConvexError("Please shorten your outfit request.");
+    }
     // The server-side generator always starts from the canonical per-user closet state,
     // never from any client-provided item list. We group closet items into category slots,
     // seed a rule-based fallback so we always have a valid outfit, and then optionally
@@ -43,13 +47,14 @@ export const analyzeOutfit = action({
     let selection = fallback;
     try {
       const openai = new OpenAI({
-        ...(process.env.CONVEX_OPENAI_BASE_URL && { baseURL: process.env.CONVEX_OPENAI_BASE_URL }),
+        baseURL: "https://api.openai.com/v1",
         apiKey: process.env.CONVEX_OPENAI_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim() || "",
         timeout: API_CONSTANTS.OPENAI.TIMEOUT,
         maxRetries: 0, // Exactly one repair attempt for invalid output; no hidden SDK retries.
       });
       const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [{ role: "user", content: prompt }];
       for (let attempt = 0; attempt < 2; attempt++) {
+        await ctx.runMutation(internal.users.authorizeAiRequest, {});
         const response = await openai.chat.completions.create({
           model: process.env.CONVEX_OPENAI_MODEL || API_CONSTANTS.OPENAI.MODEL,
           messages, reasoning_effort: "low", max_completion_tokens: 2048,
@@ -62,7 +67,8 @@ export const analyzeOutfit = action({
         if (checked.outfit) { selection = checked.outfit; source = "ai"; break; }
         messages.push({ role: "assistant", content }, { role: "user", content: `Invalid outfit: ${checked.errors.join(" ")} Return a corrected JSON outfit using only the candidates. Do not repeat a previous outfit.` });
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof ConvexError) throw error;
       // Provider/network/quota failures still produce a validated local outfit.
       console.warn("Outfit model unavailable; using the rule-based candidate selection.");
     }

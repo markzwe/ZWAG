@@ -1,12 +1,13 @@
-import { useAuth } from "@clerk/clerk-expo";
+import { useAccountStatus } from "@/hooks/useAccountStatus";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import { View } from "react-native";
 import { COLORS } from "../../constants/theme";
 
 export default function TabLayout() {
-  const { isSignedIn } = useAuth();
-  console.log("isSignedIn in _layout.tsx :", isSignedIn);
+  const { loading, status } = useAccountStatus();
+  if (loading) return null;
+  if (!status?.canUseApp) return <Redirect href="/" />;
   return (
     <Tabs
       screenOptions={{
@@ -36,7 +37,7 @@ export default function TabLayout() {
             fontFamily: "Poppins_500Medium",
             color: COLORS.black,
           },
-          tabBarIcon: ({ size, color, focused }) => {
+          tabBarIcon: ({ focused }) => {
             return (
               <View style={{ alignItems: "center", justifyContent: "center" }}>
                 <MaterialCommunityIcons
@@ -56,7 +57,7 @@ export default function TabLayout() {
         name="recents"
         options={{
           tabBarLabel: "Fits",
-          tabBarIcon: ({ size, color, focused }) => {
+          tabBarIcon: ({ focused }) => {
             return (
               <View style={{ alignItems: "center", justifyContent: "center" }}>
                 <Ionicons
@@ -77,7 +78,7 @@ export default function TabLayout() {
         options={{
           tabBarStyle: {display: "none"},
           tabBarLabel: () => null,
-          tabBarIcon: ({ color, focused }) => {
+          tabBarIcon: ({ focused }) => {
             return (
               <View
                 style={{
@@ -89,7 +90,7 @@ export default function TabLayout() {
                   justifyContent: "center",
                   marginTop: -20,
                   elevation: 4,
-                  shadowColor: focused ? "red" : COLORS.black,
+                  shadowColor: COLORS.black,
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.2,
                   shadowRadius: 4,

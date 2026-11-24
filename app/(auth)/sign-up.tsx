@@ -1,13 +1,8 @@
 import { COLORS } from "@/constants/theme";
-import { api } from "@/convex/_generated/api";
 import PrivacyModal from "@/modals/PrivacyModal";
-import TermsModal from "@/modals/TermsModal";
-import { useStylePreferences } from "@/providers/StylePreferencesProvider";
-import { useSSO, useUser } from "@clerk/clerk-expo";
+import { useSSO } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
-import * as React from "react";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -24,13 +19,8 @@ import {
 
 export default function SignUpScreen() {
   const { startSSOFlow } = useSSO();
-  const { user } = useUser();
   const [isLoading, setIsLoading] = useState(false);
-  const { preferences, clearPreferences } = useStylePreferences();
-  const updateStylePreferences = useMutation(api.users.updateStylePreferences);
-  const redeemInviteCode = useMutation(api.inviteCodes.redeemInviteCode);
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
-  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
   // COMMENTED OUT FOR V1 - SSO ONLY
   /*
@@ -51,66 +41,6 @@ export default function SignUpScreen() {
 
   const router = useRouter();
 
-  // Helper function to redeem invite code after authentication
-  const redeemInviteCodeAfterAuth = async (userId: string) => {
-    if (preferences?.referralCode) {
-      try {
-        await redeemInviteCode({ code: preferences.referralCode, userId });
-        console.log("Invite code redeemed successfully");
-      } catch (error) {
-        console.error("Failed to redeem invite code:", error);
-        // Don't block the user flow if invite code redemption fails
-      }
-    }
-  };
-
-  // Helper function to save style preferences after authentication
-  const saveStylePreferences = async () => {
-    if (preferences) {
-      try {
-        // Wait a moment for authentication to fully propagate
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        await updateStylePreferences({
-          stylePreferences: [],
-          favoriteColors: [],
-          height: preferences.height,
-          weight: preferences.weight,
-          fitPreference: "",
-          avoidClothing: preferences.avoidClothing,
-          preferredOccasions: preferences.occasions,
-          preferredBrands: preferences.brands,
-        });
-        clearPreferences(); // Clear from context after saving
-        console.log("Style preferences saved successfully");
-      } catch (error) {
-        console.error("Failed to save style preferences:", error);
-        // Retry once after another delay
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          await updateStylePreferences({
-            stylePreferences: [],
-            favoriteColors: [],
-            height: preferences.height,
-            weight: preferences.weight,
-            fitPreference: "",
-            avoidClothing: preferences.avoidClothing,
-            preferredOccasions: preferences.occasions,
-            preferredBrands: preferences.brands,
-          });
-          clearPreferences();
-          console.log("Style preferences saved successfully on retry");
-        } catch (retryError) {
-          console.error(
-            "Failed to save style preferences on retry:",
-            retryError
-          );
-          // Don't block the user flow if preferences fail to save
-        }
-      }
-    }
-  };
-
   // Google sign up handler using startSSOFlow
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -121,18 +51,7 @@ export default function SignUpScreen() {
       if (setActive && createdSessionId) {
         await setActive({ session: createdSessionId });
 
-        if (user?.id) {
-          // Redeem invite code
-          await redeemInviteCodeAfterAuth(user.id);
-
-          // ✅ Update metadata right here
-          await user?.update({
-            unsafeMetadata: { hasCompletedOnboarding: true },
-          });
-        }
-
-        await saveStylePreferences();
-        await router.push("/(tabs)");
+        router.replace("/");
       }
     } catch (error) {
       console.error("Google sign-in failed:", error);
@@ -151,15 +70,7 @@ export default function SignUpScreen() {
       if (setActive && createdSessionId) {
         await setActive({ session: createdSessionId });
 
-        if (user?.id) {
-          await redeemInviteCodeAfterAuth(user.id);
-          await user.update({
-            unsafeMetadata: { hasCompletedOnboarding: true },
-          });
-        }
-
-        await saveStylePreferences();
-        router.push("/(tabs)");
+        router.replace("/");
       }
     } catch (error) {
       console.error("Apple sign-in failed:", error);
@@ -387,14 +298,6 @@ export default function SignUpScreen() {
         {/* Terms and Conditions */}
         <View style={styles.termsFooter}>
           <Text style={styles.termsText}>
-            By continuing you agree to ZWAG&apos;s{" "}
-            <Text
-              style={styles.termsLink}
-              onPress={() => setTermsModalVisible(true)}
-            >
-              Terms of Use
-            </Text>{" "}
-            and{" "}
             <Text
               style={styles.termsLink}
               onPress={() => setPrivacyModalVisible(true)}
@@ -407,12 +310,6 @@ export default function SignUpScreen() {
                   visible={privacyModalVisible}
                   onClose={() => {
                     setPrivacyModalVisible(false);
-                  }}
-                />
-                <TermsModal
-                  visible={termsModalVisible}
-                  onClose={() => {
-                    setTermsModalVisible(false);
                   }}
                 />
       </KeyboardAvoidingView>

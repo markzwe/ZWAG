@@ -1,12 +1,12 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthenticatedUser } from "./users";
+import { requireActiveUser } from "./users";
 import { buildCandidates, validateOutfit } from "../lib/outfitRules";
 import { closetCandidates } from "./outfitHistory";
 export const saveOutfit = mutation({
   args: { historyId: v.id("outfitHistory"), eventId: v.string() },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await requireActiveUser(ctx);
     const history = await ctx.db.get(args.historyId);
     if (!history || history.userId !== user._id) throw new ConvexError("Outfit not found.");
     const previous = await ctx.db.query("outfitFeedback").withIndex("by_user_event", q => q.eq("userId", user._id).eq("eventId", args.eventId)).first();
@@ -34,7 +34,7 @@ export const getOutfitByOutfitId = query({
         outfitId: v.id('outfits'),
     },
     handler: async (ctx, { outfitId }) => {
-        const currentUser = await getAuthenticatedUser(ctx);
+        const currentUser = await requireActiveUser(ctx);
         const outfit = await ctx.db.get(outfitId);
         return outfit?.userId === currentUser._id ? outfit : null;
     }
@@ -42,7 +42,7 @@ export const getOutfitByOutfitId = query({
 export const getOutfits = query({
     handler: async (ctx) => {
         // Get the authenticated user
-        const currentUser = await getAuthenticatedUser(ctx);
+        const currentUser = await requireActiveUser(ctx);
    
         // Query outfits for the current user
         const outfits =  await ctx.db.query("outfits")
@@ -59,7 +59,7 @@ export const deleteOutfit = mutation({
         outfitId: v.id('outfits'),
     },
     handler: async (ctx, { outfitId }) => {
-        const currentUser = await getAuthenticatedUser(ctx);
+        const currentUser = await requireActiveUser(ctx);
         const outfit = await ctx.db.get(outfitId);
         if (!outfit || outfit.userId !== currentUser._id) {
             throw new Error("Outfit not found or unauthorized");

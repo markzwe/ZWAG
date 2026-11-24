@@ -1,3 +1,4 @@
+import { useDeleteAccount } from "@/hooks/useDeleteAccount";
 import {
   BORDER_RADIUS,
   COLORS,
@@ -6,7 +7,6 @@ import {
   SPACING,
 } from "@/constants/theme";
 import PrivacyModal from "@/modals/PrivacyModal";
-import TermsModal from "@/modals/TermsModal";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -72,6 +72,7 @@ const MenuItem: React.FC<MenuItemProps> = ({
 export default function Menu() {
   const { signOut } = useAuth();
   const { user } = useUser();
+  const supportUrl = process.env.EXPO_PUBLIC_SUPPORT_URL;
 
   // Animation setup
   const { width } = Dimensions.get("window");
@@ -79,7 +80,6 @@ export default function Menu() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const [privacyModalVisible, setPrivacyModalVisible] = React.useState(false);
-  const [termsModalVisible, setTermsModalVisible] = React.useState(false);
 
   useEffect(() => {
     // Slide in from right to left animation
@@ -113,39 +113,7 @@ export default function Menu() {
       },
     ]);
   };
-  const handleDeleteAccount = async () => {
-    Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            const userId = user?.id;
-            try {
-              if (!userId) {
-                throw new Error("User ID not found");
-              }
-              user?.delete(); // Use Clerk's delete method
-              router.push("/onBordingScreens/welcome");
-            } catch (error) {
-              console.error("Error deleting account:", error);
-              Alert.alert(
-                "Error",
-                "Failed to delete account. Please try again."
-              );
-              return;
-            }
-
-            console.log("Account deletion logic goes here");
-            Alert.alert("Account Deleted", "Your account has been deleted.");
-          },
-        },
-      ]
-    );
-  };
+  const { confirmDeletion: handleDeleteAccount } = useDeleteAccount();
 
   const menuSections = [
     {
@@ -174,25 +142,13 @@ export default function Menu() {
           subtitle: "Manage your data and security settings",
           onPress: () => setPrivacyModalVisible(true),
         },
-        {
-          icon: "document-text-outline" as const,
-          title: "Terms of Service",
-          subtitle: "Read our terms and policies",
-          onPress: () => setTermsModalVisible(true),
-        },
-
-        // {
-        //   icon: "settings-outline" as const,
-        //   title: "Preferences",
-        //   subtitle: "App settings and customization",
-        //   onPress: () => console.log("Settings pressed"),
-        // },
-        // {
-        //   icon: "help-circle-outline" as const,
-        //   title: "Help & Support",
-        //   subtitle: "Get help and contact support",
-        //   onPress: () => console.log("Help pressed"),
-        // },
+        ...(supportUrl?.startsWith("https://") ? [{
+          icon: "help-circle-outline" as const,
+          title: "Help & Support",
+          subtitle: "Get help with your closet or account",
+          onPress: () => void Linking.openURL(supportUrl).catch(() =>
+            Alert.alert("Could not open support")),
+        }] : []),
       ],
     },
   ];
@@ -310,13 +266,9 @@ export default function Menu() {
         </View>
         <PrivacyModal
           visible={privacyModalVisible}
+          showControls
           onClose={() => {
             setPrivacyModalVisible(false);}}
-        />
-        <TermsModal
-          visible={termsModalVisible}
-          onClose={() => {
-            setTermsModalVisible(false);}}
         />
       </Animated.View>
     </SafeAreaView>

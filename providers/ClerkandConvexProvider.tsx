@@ -1,5 +1,5 @@
 import { useAppDataLoading } from "@/hooks/useAppDataLoading";
-import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
+import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
@@ -9,14 +9,6 @@ const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
 const PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-// Debug logging
-console.log("Clerk Provider Setup:");
-console.log(
-  "CONVEX_URL:",
-  process.env.EXPO_PUBLIC_CONVEX_URL ? "Set" : "Missing"
-);
-console.log("CLERK_KEY:", PUBLISHABLE_KEY ? "Set" : "Missing");
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");
@@ -42,9 +34,7 @@ export default function ClerkandConvexProvider({
       publishableKey={PUBLISHABLE_KEY!}
     >
       <ConvexProviderWithClerk useAuth={useAuth} client={convex}>
-        <ClerkLoaded>
-          <AppDataLoader>{children}</AppDataLoader>
-        </ClerkLoaded>
+        <AppDataLoader>{children}</AppDataLoader>
       </ConvexProviderWithClerk>
     </ClerkProvider>
   );

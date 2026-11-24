@@ -1,12 +1,36 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { getAuthenticatedUser } from "./users";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { findUserByClerkId, requireActiveUser } from "./users";
 
-export const generatedUploadUrl = mutation(async(ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
-    return await ctx.storage.generateUploadUrl();
+export const canUpload = internalQuery({
+    args: {},
+    handler: async ctx => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return false;
+        const user = await findUserByClerkId(ctx, identity.subject);
+        return !!user && user.deletingAt === undefined;
+    },
+});
+
+export const isUploadRegistered = internalQuery({
+    args: { storageId: v.id("_storage") },
+    handler: async (ctx, { storageId }) =>
+        !!await ctx.db.query("uploads").withIndex("byStorage", q => q.eq("storageId", storageId)).first(),
+});
+
+export const registerUpload = internalMutation({
+    args: { storageId: v.id("_storage") },
+    handler: async (ctx, { storageId }) => {
+        const user = await requireActiveUser(ctx);
+        const pending = await ctx.db.query("uploads").withIndex("byUser", q => q.eq("userId", user._id)).take(10);
+        if (pending.length >= 10) {
+            // Reclaim the oldest unfinished upload when replacing it with a new one.
+            await ctx.storage.delete(pending[0].storageId);
+            await ctx.db.delete(pending[0]._id);
+        }
+        await ctx.db.insert("uploads", { userId: user._id, storageId });
+    },
 });
 
 export const uploadItem = mutation({
@@ -21,8 +45,10 @@ export const uploadItem = mutation({
         embedding: v.optional(v.array(v.float64())),
     },
     handler: async (ctx, args) => {
-        const user = await getAuthenticatedUser(ctx);
+        const user = await requireActiveUser(ctx);
 
+        const upload = await ctx.db.query("uploads").withIndex("byStorage", q => q.eq("storageId", args.storageId)).first();
+        if (!upload || upload.userId !== user._id) throw new ConvexError("Upload this photo again to continue.");
         const imageUrl = await ctx.storage.getUrl(args.storageId);
         if(!imageUrl) throw new Error("Image not found");
          
@@ -42,6 +68,7 @@ export const uploadItem = mutation({
 
         const itemId = await ctx.db.insert("items", item);
 
+        await ctx.db.delete(upload._id);
         return itemId;
     }
 })
@@ -59,7 +86,7 @@ export const getItem = query({
     },
     handler: async (ctx, args) => {
         // Get the authenticated user
-        const currentUser = await getAuthenticatedUser(ctx);
+        const currentUser = await requireActiveUser(ctx);
 
         // Start with the base query
         let query = ctx.db.query("items").filter((q) => q.eq(q.field("userId"), currentUser._id));
@@ -101,7 +128,7 @@ export const getItem = query({
 export const getOneItemById = query({
   args: { itemId: v.id("items") },
   handler: async (ctx, { itemId }) => {
-    const currentUser = await getAuthenticatedUser(ctx);
+    const currentUser = await requireActiveUser(ctx);
     const item = await ctx.db.get(itemId);
 
     if (!item || item.userId !== currentUser._id) {
@@ -114,7 +141,7 @@ export const getOneItemById = query({
 
 export const getItemsForGenerateOutfit = query({
   handler: async (ctx) => {
-    const currentUser = await getAuthenticatedUser(ctx);
+    const currentUser = await requireActiveUser(ctx);
 
     const items = await ctx.db.query("items")
       .withIndex("by_userId", (q) => q.eq("userId", currentUser._id))
@@ -135,7 +162,7 @@ export const getOutfitItemsFromAi = query({
     accessories: v.optional(v.union(v.id("items"), v.array(v.id("items")))),
   },
   handler: async (ctx, outfit) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await requireActiveUser(ctx);
     const accessoryIds = Array.isArray(outfit.accessories) ? outfit.accessories : outfit.accessories ? [outfit.accessories] : [];
     const ownedItem = async (id: Id<"items"> | undefined) => {
       if (!id) return null;
@@ -154,7 +181,7 @@ export const getOutfitItemsFromAi = query({
 export const countItemsByCategory = query({
   handler: async (ctx) => {
     // Get the authenticated user
-    const currentUser = await getAuthenticatedUser(ctx);
+    const currentUser = await requireActiveUser(ctx);
 
     const items = await ctx.db
       .query("items")
@@ -175,7 +202,7 @@ export const getPreviewImageByCategory = query({
   handler: async (ctx): Promise<
     { category: string; images: string[] }[]
   > => {
-    const currentUser = await getAuthenticatedUser(ctx);
+    const currentUser = await requireActiveUser(ctx);
 
     const items = await ctx.db
       .query("items")
@@ -211,7 +238,7 @@ export const updateItem = mutation({
     brand: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await requireActiveUser(ctx);
     if (!user) throw new Error("Unauthorized");
 
     // Find the item, ensure it belongs to the user
@@ -235,7 +262,7 @@ export const updateItem = mutation({
 export const deleteItem = mutation({
   args: { itemId: v.id("items") },
   handler: async (ctx, { itemId }) => { 
-    const user = await getAuthenticatedUser(ctx);
+    const user = await requireActiveUser(ctx);
     if (!user) throw new Error("Unauthorized");
 
     // Find the item, ensure it belongs to the user
@@ -247,7 +274,10 @@ export const deleteItem = mutation({
     await ctx.db.delete(itemId);
 
     // delete the associated storage file
-    await ctx.storage.delete(item.storageId as Id<"_storage">);
+    const shared = await ctx.db.query("items").withIndex("byStorageId", q => q.eq("storageId", item.storageId))
+      .filter(q => q.neq(q.field("_id"), item._id)).first();
+    const storageId = ctx.db.system.normalizeId("_storage", item.storageId);
+    if (!shared && storageId && await ctx.db.system.get("_storage", storageId)) await ctx.storage.delete(storageId);
 
     return true;
   }

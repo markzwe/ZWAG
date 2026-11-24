@@ -8,9 +8,9 @@
  * @module
  */
 
+import type * as accountDeletion from "../accountDeletion.js";
 import type * as generateOutfits from "../generateOutfits.js";
 import type * as http from "../http.js";
-import type * as inviteCodes from "../inviteCodes.js";
 import type * as items from "../items.js";
 import type * as outfitDataValidators from "../outfitDataValidators.js";
 import type * as outfitHistory from "../outfitHistory.js";
@@ -25,9 +25,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  accountDeletion: typeof accountDeletion;
   generateOutfits: typeof generateOutfits;
   http: typeof http;
-  inviteCodes: typeof inviteCodes;
   items: typeof items;
   outfitDataValidators: typeof outfitDataValidators;
   outfitHistory: typeof outfitHistory;

@@ -24,10 +24,10 @@ export default function StylistOutfitCard({ outfit, disabled, saving, saved, onS
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Ionicons name="shirt-outline" size={16} color={COLORS.accent} />
+        <Ionicons name="shirt-outline" size={16} color={COLORS.black} />
         <Text style={styles.eyebrow}>FROM YOUR CLOSET</Text>
       </View>
-      {!items ? <ActivityIndicator style={styles.loader} color={COLORS.accent} /> : (
+      {!items ? <ActivityIndicator style={styles.loader} color={COLORS.black} /> : (
         <View style={styles.grid}>
           {garments.map(item => (
             <View key={item._id} style={styles.garment}>
@@ -40,7 +40,7 @@ export default function StylistOutfitCard({ outfit, disabled, saving, saved, onS
         </View>
       )}
       <TouchableOpacity accessibilityRole="button" style={[styles.save, (disabled || saved) && styles.muted]} onPress={onSave} disabled={disabled || saved}>
-        {saving ? <ActivityIndicator size="small" color="white" /> : <Ionicons name={saved ? "heart" : "heart-outline"} size={18} color="white" />}
+        {saving ? <ActivityIndicator size="small" color={COLORS.pureWhite} /> : <Ionicons name={saved ? "heart" : "heart-outline"} size={18} color={COLORS.pureWhite} />}
         <Text style={styles.saveText}>{saving ? "Saving…" : saved ? "Saved to your outfits" : "Save outfit"}</Text>
       </TouchableOpacity>
       <View style={styles.actions}>
@@ -59,14 +59,14 @@ export default function StylistOutfitCard({ outfit, disabled, saving, saved, onS
 const styles = StyleSheet.create({
   card: { borderRadius: 20, padding: 16, backgroundColor: COLORS.pureWhite, borderWidth: 1, borderColor: COLORS.border, marginTop: 12 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
-  eyebrow: { fontSize: 10, letterSpacing: 1.8, fontWeight: "700", color: COLORS.accent },
+  eyebrow: { fontSize: 10, letterSpacing: 1.8, fontWeight: "700", color: COLORS.black },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   garment: { width: "47%", paddingBottom: 8 },
   photo: { width: "100%", height: 124, backgroundColor: COLORS.surface, borderRadius: 12 },
   garmentName: { color: COLORS.textPrimary, fontWeight: "600", fontSize: 13, marginTop: 8 },
   color: { color: COLORS.textSecondary, fontSize: 12, marginTop: 3 },
-  save: { backgroundColor: COLORS.accent, paddingVertical: 13, borderRadius: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 12 },
-  saveText: { color: "white", fontSize: 14, fontWeight: "600" },
+  save: { backgroundColor: COLORS.black, paddingVertical: 13, borderRadius: 13, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 12 },
+  saveText: { color: COLORS.pureWhite, fontSize: 14, fontWeight: "600" },
   actions: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
   action: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12, minHeight: 44 },
   actionText: { color: COLORS.textSecondary, fontSize: 12 },

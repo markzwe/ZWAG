@@ -20,7 +20,18 @@ export default defineSchema({
       preferredOccasions: v.optional(v.array(v.string())), // e.g. ["work", "casual"]
       preferredBrands: v.optional(v.string()),           // comma-separated brands
       seasonalOutfits: v.optional(v.boolean()), // Legacy field; no longer read or written.
-
+      // Legacy fields for rows created before invite codes were removed.
+      hasAccess: v.optional(v.boolean()),
+      aiConsentAt: v.optional(v.number()),
+      aiConsentVersion: v.optional(v.number()),
+      aiRequestDay: v.optional(v.number()),
+      aiRequestCount: v.optional(v.number()),
+      deletingAt: v.optional(v.number()),
+      deletionJob: v.optional(v.id("_scheduled_functions")),
+      deletionFailed: v.optional(v.boolean()),
+      clerkDeleted: v.optional(v.boolean()),
+      legacyInvitesCleaned: v.optional(v.boolean()),
+      legacyInviteCursor: v.optional(v.string()),
       numberOfClothes: v.optional(v.number()), // Number of clothes user has
     })
     .index("byClerkId", ["clerkId"]),
@@ -40,6 +51,7 @@ export default defineSchema({
       embedding: v.optional(v.array(v.float64())), // image vector
     })  
     .index("by_userId", ["userId"])
+    .index("byStorageId", ["storageId"])
     .index("by_userId_category", ["userId", "category"])
     .index("by_userId_color", ["userId", "color"])
     .index("by_userId_embedding", ["userId", "embedding"])
@@ -82,7 +94,12 @@ export default defineSchema({
   }).index("by_user", ["userId"])
     .index("by_user_event", ["userId", "eventId"]),
 
- // inviteCodes schema updated to match convex/inviteCodes.ts implementation
+  // Retain legacy rows so account deletion can remove old redemption references.
+  deletedAccounts: defineTable({ clerkId: v.string() }).index("byClerkId", ["clerkId"]),
+  uploads: defineTable({
+    userId: v.id("users"),
+    storageId: v.id("_storage"),
+  }).index("byUser", ["userId"]).index("byStorage", ["storageId"]),
   inviteCodes: defineTable({
     code: v.string(), // e.g. "ZWAG2023"
     maxUses: v.optional(v.number()), // number of allowed uses

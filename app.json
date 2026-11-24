@@ -8,7 +8,7 @@
     "scheme": "zwag",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.mark-zwe.ZWAG",
       "appleTeamId": "UCJUW26N3S"
     },
@@ -34,6 +34,14 @@
           "resizeMode": "contain",
           "backgroundColor": "#272B2C",
           "userInterfaceStyle": "dark"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow ZWAG to take photos of clothing you want to add to your closet.",
+          "photosPermission": "Allow ZWAG to select clothing photos to add to your closet.",
+          "microphonePermission": false
         }
       ]
     ],

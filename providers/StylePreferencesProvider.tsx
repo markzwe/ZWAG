@@ -6,7 +6,6 @@ interface StylePreferences {
   brands: string;
   height: string;
   weight: string;
-  referralCode: string;
 }
 
 interface StylePreferencesContextType {

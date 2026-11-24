@@ -1,57 +1,23 @@
-import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/clerk-expo";
-import { useQuery } from "convex/react";
+import { useAuth } from "@clerk/clerk-expo";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { clearLocalChat } from "@/lib/localChatStorage";
+import { useAccountStatus } from "./useAccountStatus";
 
-/**
- * Hook to track when essential app data is loaded
- * Only hides splash screen when core data is ready
- */
 export function useAppDataLoading() {
-  const { isLoaded: isUserLoaded, isSignedIn } = useUser();
-  const [isAppReady, setIsAppReady] = useState(false);
-
-  // Only fetch data if user is signed in
-  const outfits = useQuery(api.outfits.getOutfits, isSignedIn ? {} : "skip");
-  const items = useQuery(api.items.getPreviewImageByCategory, isSignedIn ? {} : "skip");
-  const itemCounts = useQuery(api.items.countItemsByCategory, isSignedIn ? {} : "skip");
+  const { userId } = useAuth();
+  const { status, loading } = useAccountStatus();
 
   useEffect(() => {
-    async function prepare() {
-      try {
-        // Wait for user authentication to load
-        if (!isUserLoaded) return;
+    // Once Clerk has mounted the app, an on-screen loader can show connection progress.
+    void SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
-        // If user is not signed in, app is ready (will show auth screens)
-        if (!isSignedIn) {
-          setIsAppReady(true);
-          await SplashScreen.hideAsync();
-          return;
-        }
-
-        // If user is signed in, wait for essential data to load
-        const isDataLoaded = outfits !== undefined && 
-                            items !== undefined && 
-                            itemCounts !== undefined;
-
-        if (isDataLoaded && !isAppReady) {
-          setIsAppReady(true);
-          await SplashScreen.hideAsync();
-        }
-      } catch (error) {
-        console.warn('Error preparing app:', error);
-        // Hide splash screen even on error to prevent infinite loading
-        setIsAppReady(true);
-        await SplashScreen.hideAsync();
-      }
+  useEffect(() => {
+    if (userId && (status?.deleting || status?.deleted)) {
+      void clearLocalChat(userId).catch(() => console.warn("Could not clear local chat."));
     }
+  }, [userId, status?.deleting, status?.deleted]);
 
-    prepare();
-  }, [isUserLoaded, isSignedIn, outfits, items, itemCounts, isAppReady]);
-
-  return {
-    isAppReady,
-    isLoading: !isAppReady,
-  };
+  return { isAppReady: !loading, isLoading: loading };
 }

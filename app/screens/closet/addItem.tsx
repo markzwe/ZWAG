@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   StatusBar,
   Animated,
+  Alert,
+  Linking,
 } from "react-native";
 import React, { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,34 +40,28 @@ export default function AddItem() {
   }, [fadeAnim, scaleAnim]);
 
   const handleOpenCamera = async () => {
-    // Request camera permissions
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (status !== "granted") {
-      alert("Sorry, we need camera permissions to take photos!");
-      return;
-    }
-
-    let result = await ImagePicker.launchCameraAsync({
-      mediaTypes: "images",
-      allowsEditing: false,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Camera access is off", "Choose a clothing photo from your library, or enable the camera in Settings.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => void Linking.openSettings().catch(() => {}) },
+        ]);
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: "images", quality: 0.8 });
+      if (!result.canceled) setSelectedImage(result.assets[0].uri);
+    } catch {
+      Alert.alert("Could not open camera", "Try choosing a photo from your library.");
     }
   };
 
   const handleImagePicker = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      allowsEditing: false,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images", quality: 0.8 });
+      if (!result.canceled) setSelectedImage(result.assets[0].uri);
+    } catch {
+      Alert.alert("Could not open photos", "Check photo access in Settings and try again.");
     }
   };
 

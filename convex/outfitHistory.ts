@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { buildCandidates, outfitIds, outfitSignature, validateOutfit, type ClosetCandidate } from "../lib/outfitRules";
 import { internalQuery, mutation } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { getAuthenticatedUser } from "./users";
+import { requireActiveUser } from "./users";
 import { outfitDataValidator, sourceValidator } from "./outfitDataValidators";
 
 export function closetCandidates(items: Doc<"items">[]): ClosetCandidate[] {
@@ -17,7 +17,7 @@ export interface GenerationContext {
 export const generationContext = internalQuery({
   args: {},
   handler: async (ctx): Promise<GenerationContext> => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await requireActiveUser(ctx);
     const items = await ctx.db.query("items").withIndex("by_userId", q => q.eq("userId", user._id)).collect();
     const history = await ctx.db.query("outfitHistory").withIndex("by_user", q => q.eq("userId", user._id)).collect();
     return { items, previousOutfits: history.map(entry => entry.outfit) };
@@ -27,7 +27,7 @@ export const generationContext = internalQuery({
 export const recordShown = mutation({
   args: { outfit: outfitDataValidator, source: sourceValidator, occasion: v.string(), eventId: v.string() },
   handler: async (ctx, args): Promise<Id<"outfitHistory">> => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await requireActiveUser(ctx);
     const existing = await ctx.db.query("outfitHistory").withIndex("by_user_event", q => q.eq("userId", user._id).eq("eventId", args.eventId)).first();
     if (existing) {
       if (existing.signature !== outfitSignature(args.outfit)) throw new ConvexError("This display event already refers to another outfit.");
@@ -54,7 +54,7 @@ export const logFeedback = mutation({
     eventId: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await requireActiveUser(ctx);
     const history = await ctx.db.get(args.historyId);
     if (!history || history.userId !== user._id) throw new ConvexError("Outfit not found.");
     const existing = await ctx.db.query("outfitFeedback").withIndex("by_user_event", q => q.eq("userId", user._id).eq("eventId", args.eventId)).first();

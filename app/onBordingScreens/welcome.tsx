@@ -1,11 +1,10 @@
 import { BORDER_RADIUS, COLORS, SPACING } from "@/constants/theme";
 import PrivacyModal from "@/modals/PrivacyModal";
-import TermsModal from "@/modals/TermsModal";
-import { useAuth, useSSO, useUser } from "@clerk/clerk-expo";
+import { useAuth, useSSO } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -23,12 +22,10 @@ const { height: screenHeight } = Dimensions.get("window");
 
 export default function Welcome() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { user, isLoaded: userLoaded } = useUser();
   const { startSSOFlow } = useSSO();
   const [isSignInModalVisible, setIsSignInModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
-  const [termsModalVisible, setTermsModalVisible] = useState(false);
 
   // Modal handlers
   const handleOpenSignIn = () => {
@@ -40,21 +37,8 @@ export default function Welcome() {
   };
 
   useEffect(() => {
-    if (!isLoaded || !userLoaded || !isSignedIn) return;
-
-    // For new users (hasCompletedOnboarding is undefined) or users who haven't completed onboarding
-    if (user?.unsafeMetadata?.hasCompletedOnboarding !== true && isSignedIn) {
-      router.push("/onBordingScreens/styleQuestionnaire");
-      handleCloseSignIn();
-    }
-    // Only navigate to tabs if explicitly marked as completed
-    else if (
-      user?.unsafeMetadata?.hasCompletedOnboarding === true &&
-      isSignedIn
-    ) {
-      router.push("/(tabs)");
-    }
-  }, [isLoaded, userLoaded, isSignedIn, user]);
+    if (isLoaded && isSignedIn) router.replace("/");
+  }, [isLoaded, isSignedIn]);
 
   const handleSocialSSO = async (strategy: "oauth_google" | "oauth_apple") => {
     setIsLoading(true);
@@ -65,7 +49,6 @@ export default function Welcome() {
         await setActive({ session: createdSessionId });
       }
 
-      // After sign in/up, user object will load, triggering effect above
     } catch (err) {
       console.error(`${strategy} sign-in error:`, err);
     } finally {
@@ -107,12 +90,12 @@ export default function Welcome() {
         <Text style={styles.valueSubtitle}>what to wear</Text>
 
         <Text style={styles.mainMessage}>
-          Get dressed in 30 seconds. Look sharp every day.
+          Save your clothes and get outfit ideas for what you own.
         </Text>
 
         <View style={styles.benefitsContainer}>
           <Text style={styles.benefitText}>
-            • AI picks your outfit instantly
+            • Get outfit suggestions from your closet
           </Text>
           <Text style={styles.benefitText}>• No fashion knowledge needed</Text>
           <Text style={styles.benefitText}>• Perfect for busy mornings</Text>
@@ -123,7 +106,7 @@ export default function Welcome() {
       <View style={styles.buttonSection}>
         <TouchableOpacity
           style={styles.primaryButton}
-          onPress={() => router.push("./styleQuestionnaire")}
+          onPress={() => router.push("/(auth)/sign-up")}
           activeOpacity={0.8}
         >
           <Text style={styles.primaryButtonText}>Get Started</Text>
@@ -197,8 +180,6 @@ export default function Welcome() {
                 </View>
                 <View style={styles.termsFooter}>
                   <Text style={styles.termsText}>
-                    By continuing you agree to ZWAG’s{" "}
-                    <Text style={styles.termsLink} onPress = { () => setTermsModalVisible(true)}>Terms of Use</Text> and{" "}
                     <Text style={styles.termsLink} onPress = { () => setPrivacyModalVisible(true)}>Privacy Policy</Text>
                   </Text>
                 </View>
@@ -210,12 +191,6 @@ export default function Welcome() {
           visible={privacyModalVisible}
           onClose={() => {
             setPrivacyModalVisible(false);
-          }}
-        />
-        <TermsModal
-          visible={termsModalVisible}
-          onClose={() => {
-            setTermsModalVisible(false);
           }}
         />
       </Modal>

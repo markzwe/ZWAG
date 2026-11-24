@@ -152,7 +152,6 @@ const BrowseHeader: React.FC<BrowseHeaderProps> = ({
 export default function BrowseItems() {
   // get the selected category from the router params
   const { categoryName } = useLocalSearchParams() as { categoryName: string };
-  console.log("Selected category:", categoryName);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterVisible, setFilterVisible] = useState(false);
@@ -182,17 +181,14 @@ export default function BrowseItems() {
   const handleSetFilter = (filters: string[]) => {
     setSelectedFilters(filters);
     setFilterVisible(false);
-    console.log("Filters selected:", filters);
   };
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-    console.log("Searching for:", text);
   };
 
-  const handleCardPress = (item: any, index: number) => {
+  const handleCardPress = (item: any) => {
     // Do something, e.g. navigate or show details
-    console.log("Pressed card:", item, "at index:", index);
     router.push({
       pathname: "/screens/closet/itemViewDetail",
       params: {
@@ -239,7 +235,7 @@ export default function BrowseItems() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={[styles.listContent, { paddingBottom: 20 }]}
         bounces={false}
-        renderItem={({ item, index }) =>
+        renderItem={({ item }) =>
           (
             <ItemsPreview
               imageUri={item.imageUrl}
@@ -247,8 +243,7 @@ export default function BrowseItems() {
               category={item.category}
               subcategory={item.subcategory}
               onPress={() => {
-                console.log("Pressed card:", item, "at index:", index);
-                handleCardPress(item, index);
+                handleCardPress(item);
               }}
             />
           )

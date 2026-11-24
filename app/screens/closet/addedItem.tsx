@@ -3,12 +3,14 @@ import { api } from "@/convex/_generated/api";
 import BrandModal from "@/modals/BrandModal";
 import CategoryModal from "@/modals/CategoryModal";
 import ColorModal from "@/modals/ColorModal";
+import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
 import * as FileSystem from "expo-file-system/legacy";
 import { Image } from "expo-image";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 
 import {
   Alert,
@@ -25,8 +27,6 @@ export default function AddedItem() {
   const { processedImageUri } = useLocalSearchParams<{
     processedImageUri?: string;
   }>();
-  // Debugging: Log the processed image URI
-  console.log("Processed Image URI:", processedImageUri);
 
   const [category, setCategory] = useState<string>("");
   const [color, setColor] = useState<string>("");
@@ -44,7 +44,8 @@ export default function AddedItem() {
     "Streetwear",
   ];
 
-  const generatedUploadUrl = useMutation(api.items.generatedUploadUrl);
+  const { getToken } = useAuth();
+  const [saving, setSaving] = useState(false);
   const createItem = useMutation(api.items.uploadItem);
   const [subcategory, setSubcategory] = useState<string>("");
   const [style, setStyle] = useState<string[]>([]);
@@ -59,17 +60,27 @@ export default function AddedItem() {
   };
 
   const saveToWardrobe = async () => {
-    if (!processedImageUri) return;
-    console.log("styleOptions:", styleOptions);
+    if (!processedImageUri || saving) return;
+    setSaving(true);
+    let temporaryUri: string | undefined;
     try {
-      const uploadUrl = await generatedUploadUrl();
+      const token = await getToken({ template: "convex" });
+      const site = process.env.EXPO_PUBLIC_CONVEX_SITE_URL
+        || process.env.EXPO_PUBLIC_CONVEX_URL?.replace(/\.convex\.cloud\/?$/, ".convex.site");
+      if (!token || !site) throw new Error("Closet upload is unavailable.");
+      const isPng = /\.png(?:$|[?#])/i.test(processedImageUri);
+      const format = isPng ? SaveFormat.PNG : SaveFormat.JPEG;
+      const image = await ImageManipulator.manipulate(processedImageUri).renderAsync();
+      const uploadImage = await image.saveAsync({ format, compress: 0.85 });
+      temporaryUri = uploadImage.uri;
       const uploadResult = await FileSystem.uploadAsync(
-        uploadUrl,
-        processedImageUri,
+        `${site.replace(/\/$/, "")}/closet-upload`,
+        uploadImage.uri,
         {
           httpMethod: "POST",
+          headers: { Authorization: `Bearer ${token}` },
           uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-          mimeType: /\.png(?:$|[?#])/i.test(processedImageUri) ? "image/png" : "image/jpeg",
+          mimeType: isPng ? "image/png" : "image/jpeg",
         }
       );
 
@@ -83,16 +94,14 @@ export default function AddedItem() {
         subcategory, // Use the selected subcategory
         style,
         color,
+        brand,
       });
-      router.push("/(tabs)");
-    } catch (error) {
-      console.error(error);
+      router.replace("/(tabs)");
+    } catch {
       Alert.alert("Upload Error", "There was a problem uploading the item.");
     } finally {
-      Alert.alert("Success", "Clothing item added to your wardrobe!");
-      setCategory("");
-      setColor("");
-      setCaption("");
+      if (temporaryUri) void FileSystem.deleteAsync(temporaryUri, { idempotent: true }).catch(() => {});
+      setSaving(false);
     }
   };
 
@@ -270,15 +279,17 @@ export default function AddedItem() {
             (!category || !subcategory || style.length === 0) &&
               styles.saveButtonDisabled,
           ]}
+          accessibilityRole="button"
+          accessibilityState={{ busy: saving }}
           onPress={saveToWardrobe}
-          disabled={!category || !subcategory || style.length === 0}
+          disabled={saving || !category || !subcategory || style.length === 0}
         >
           <Ionicons
             name="checkmark-circle"
             size={22}
             color={COLORS.pureWhite}
           />
-          <Text style={styles.saveButtonText}>Save to Wardrobe</Text>
+          <Text style={styles.saveButtonText}>{saving ? "Saving…" : "Save to Wardrobe"}</Text>
         </TouchableOpacity>
       </View>
 

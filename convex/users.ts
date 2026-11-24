@@ -1,105 +1,129 @@
-import { v } from "convex/values";
-import { internalMutation, mutation, MutationCtx, query, QueryCtx } from "./_generated/server";
+import { ConvexError, v } from "convex/values";
+import { AI_CONSENT_VERSION } from "../constants/aiConsent";
+import { internalMutation, mutation, query } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 
-export const createUser = mutation({
-    args: {
-      clerkId: v.string(),
-      email: v.string(),
-      //Personalization fields
-      birthYear: v.optional(v.number()),
-      height: v.optional(v.string()), // e.g., "5'10" or 178cm"
-      weight: v.optional(v.string()), // e.g., "165 lbs or 75 kg"
-      stylePreferences: v.optional(v.array(v.string())), // e.g. ["techwear", "vintage"]
-      favoriteColors: v.optional(v.array(v.string())),   // e.g. ["black", "white"]
-      bodyType: v.optional(v.string()),                 // e.g. "slim, triangle"
-      fitPreference: v.optional(v.string()),             // e.g. "oversized", "slim"
-      avoidClothing: v.optional(v.string()),             // clothing types to avoid
-      preferredOccasions: v.optional(v.array(v.string())), // e.g. ["work", "casual"]
-      preferredBrands: v.optional(v.string()),           // comma-separated brands
-      numberOfClothes: v.optional(v.number()), // Number of clothes user has
-    },
-    handler: async (ctx, args) => {
-        // Check for existing user
-        const existingUser = await ctx.db
-            .query("users")
-            .withIndex("byClerkId", (q) => q.eq("clerkId", args.clerkId))
-            .first();
+export async function findUserByClerkId(ctx: QueryCtx | MutationCtx, clerkId: string) {
+  return ctx.db.query("users").withIndex("byClerkId", q => q.eq("clerkId", clerkId)).first();
+}
 
-        if (existingUser) return;
+export const createUser = internalMutation({
+  args: { clerkId: v.string(), email: v.string() },
+  handler: async (ctx, args) => {
+    const existing = await findUserByClerkId(ctx, args.clerkId);
+    if (existing) {
+      if (!existing.email && args.email && !existing.deletingAt) await ctx.db.patch(existing._id, { email: args.email });
+      return;
+    }
+    if (await ctx.db.query("deletedAccounts").withIndex("byClerkId", q => q.eq("clerkId", args.clerkId)).first()) return;
+    await ctx.db.insert("users", { ...args, numberOfClothes: 0 });
+  },
+});
 
-        await ctx.db.insert("users", {
-            ...args,
-            numberOfClothes: 0
-        });
-    },
+// This fallback can only provision the verified caller while the webhook catches up.
+export const prepareMyProfile = mutation({
+  args: {},
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError("Sign in to continue.");
+    if (await findUserByClerkId(ctx, identity.subject)) return;
+    const deleted = await ctx.db.query("deletedAccounts").withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).first();
+    if (deleted) return;
+    await ctx.db.insert("users", {
+      clerkId: identity.subject, email: "", numberOfClothes: 0,
+    });
+  },
+});
+
+export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new ConvexError("Sign in to continue.");
+  const user = await findUserByClerkId(ctx, identity.subject);
+  if (!user) throw new ConvexError("Your account is still being set up.");
+  return user;
+}
+
+export async function requireActiveUser(ctx: QueryCtx | MutationCtx) {
+  const user = await getAuthenticatedUser(ctx);
+  if (user.deletingAt !== undefined) throw new ConvexError("This account is being deleted.");
+  return user;
+}
+
+export const getAccountStatus = query({
+  args: {},
+  handler: async ctx => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+    const user = await findUserByClerkId(ctx, identity.subject);
+    const deleted = !user && !!await ctx.db.query("deletedAccounts")
+      .withIndex("byClerkId", q => q.eq("clerkId", identity.subject)).first();
+    const deleting = user?.deletingAt !== undefined;
+    return {
+      profileReady: !!user,
+      canUseApp: !!user && !deleting,
+      aiConsent: user?.aiConsentVersion === AI_CONSENT_VERSION && !deleting,
+      deleting,
+      deletionFailed: user?.deletionFailed === true,
+      deleted,
+    };
+  },
+});
+
+export const getCurrentUser = query({ args: {}, handler: requireActiveUser });
+
+export const setAiConsent = mutation({
+  args: { allowed: v.boolean(), version: v.number() },
+  handler: async (ctx, { allowed, version }) => {
+    const user = await requireActiveUser(ctx);
+    if (allowed && version !== AI_CONSENT_VERSION) throw new ConvexError("Update ZWAG to review the current AI disclosure.");
+    await ctx.db.patch(user._id, {
+      aiConsentVersion: allowed ? version : undefined,
+      aiConsentAt: allowed ? Date.now() : undefined,
+    });
+  },
+});
+
+export const authorizeAiRequest = internalMutation({
+  args: {},
+  handler: async ctx => {
+    const user = await requireActiveUser(ctx);
+    if (user.aiConsentVersion !== AI_CONSENT_VERSION) {
+      throw new ConvexError("Allow OpenAI sharing to chat with Zwag.");
+    }
+    const day = Math.floor(Date.now() / 86_400_000);
+    const requestCount = user.aiRequestDay === day ? user.aiRequestCount ?? 0 : 0;
+    if (requestCount >= 30) throw new ConvexError("Daily AI limit reached. Try again tomorrow.");
+    await ctx.db.patch(user._id, { aiRequestDay: day, aiRequestCount: requestCount + 1 });
+  },
 });
 
 export const updateStylePreferences = mutation({
-    args: {
-      stylePreferences: v.optional(v.array(v.string())),
-      favoriteColors: v.optional(v.array(v.string())),
-      height: v.optional(v.string()),
-      weight: v.optional(v.string()),
-      fitPreference: v.optional(v.string()),
-      avoidClothing: v.optional(v.string()),
-      preferredOccasions: v.optional(v.array(v.string())),
-      preferredBrands: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const user = await getAuthenticatedUser(ctx);
-        
-        await ctx.db.patch(user._id, {
-          ...(args.stylePreferences !== undefined && { stylePreferences: args.stylePreferences }),
-          ...(args.favoriteColors !== undefined && { favoriteColors: args.favoriteColors }),
-          ...(args.height !== undefined && { height: args.height }),
-          ...(args.weight !== undefined && { weight: args.weight }),
-          ...(args.fitPreference !== undefined && { fitPreference: args.fitPreference }),
-          ...(args.avoidClothing !== undefined && { avoidClothing: args.avoidClothing }),
-          ...(args.preferredOccasions !== undefined && { preferredOccasions: args.preferredOccasions }),
-          ...(args.preferredBrands !== undefined && { preferredBrands: args.preferredBrands }),
-        });
-    },
-});
-
-export const deleteUserByClerkId = mutation({
-  args: { clerkId: v.string() },
+  args: {
+    stylePreferences: v.optional(v.array(v.string())),
+    favoriteColors: v.optional(v.array(v.string())),
+    fitPreference: v.optional(v.string()),
+    avoidClothing: v.optional(v.string()),
+    preferredOccasions: v.optional(v.array(v.string())),
+    preferredBrands: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("byClerkId", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (!user) {
-      console.warn("No user found to delete for Clerk ID:", args.clerkId);
-      return;
-    }
-
-    await ctx.db.delete(user._id);
+    const user = await requireActiveUser(ctx);
+    await ctx.db.patch(user._id, Object.fromEntries(Object.entries(args).filter(([, value]) => value !== undefined)));
   },
 });
-//helper function 
-export async function getAuthenticatedUser(ctx: QueryCtx | MutationCtx) {
-  const identity = await ctx.auth.getUserIdentity();
 
-  if (!identity) {
-    throw new Error("Unauthorized: No identity found.");
-  }
-
-  const currentUser = await ctx.db
-    .query("users")
-    .withIndex("byClerkId", (q) => q.eq("clerkId", identity.subject))
-    .first();
-
-  if (!currentUser) {
-    throw new Error(`User not found for Clerk ID: ${identity.subject}`);
-  }
-
-  return currentUser;
-}
-
-// Query to get current user's profile
-export const getCurrentUser = query({
-  handler: async (ctx) => {
-    return await getAuthenticatedUser(ctx);
+export const clearLegacyMeasurements = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()), dryRun: v.boolean() },
+  handler: async (ctx, { cursor, dryRun }) => {
+    const { page, isDone, continueCursor } = await ctx.db.query("users").paginate({ numItems: 100, cursor });
+    let affected = 0;
+    for (const user of page) {
+      if (user.height === undefined && user.weight === undefined && user.bodyType === undefined && user.birthYear === undefined) continue;
+      affected++;
+      if (!dryRun) await ctx.db.patch(user._id, {
+        height: undefined, weight: undefined, bodyType: undefined, birthYear: undefined,
+      });
+    }
+    return { affected, isDone, continueCursor };
   },
 });
